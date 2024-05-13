@@ -1,0 +1,293 @@
+import KeepAliveHttpAgent from 'agentkeepalive';
+import test from 'ava';
+import safeGot from 'got';
+import sinon from 'sinon';
+
+import {
+  AuditLogModule,
+  AuditLoggerDefaultExporter,
+  OpenTelemetryGrpcExporter,
+  OpenTelemetryHttpExporter,
+} from '../../src';
+
+import { CatsController } from './test-controller';
+import { CatsModule } from './test-module';
+import { CatsService } from './test-service';
+import type { NestJSTestingServerFactory } from './types';
+import { Logger } from '@nestjs/common';
+
+const got = safeGot.extend({
+  https: {
+    rejectUnauthorized: false,
+  },
+});
+
+const delay = (second) =>
+  new Promise((resolve) => setTimeout(resolve, second * 1000));
+
+export const createTests = (
+  createNestJSTestingServer: NestJSTestingServerFactory
+): void => {
+  const auditLog1 = {
+    resource: { id: '1', type: 'Cat' },
+    operation: {
+      id: 'findTheCat',
+      type: 'Query',
+      status: 'SUCCEEDED',
+    },
+    actor: {
+      id: 'unknown',
+      type: 'unknown',
+      ip: '::ffff:127.0.0.1',
+      agent: 'got (https://github.com/sindresorhus/got)',
+    },
+  };
+  const auditLog2 = {
+    resource: { id: '1', type: 'Cat' },
+    operation: {
+      id: 'createTheCat',
+      type: 'Create',
+      status: 'SUCCEEDED',
+    },
+    actor: {
+      id: 'unknown',
+      type: 'unknown',
+      ip: '::ffff:127.0.0.1',
+      agent: 'got (https://github.com/sindresorhus/got)',
+    },
+  };
+  const auditLog3 = {
+    resource: { id: '1', type: 'Cat' },
+    operation: {
+      id: 'findTheCat',
+      type: 'Query',
+      status: 'FAILED',
+    },
+    actor: {
+      id: 'unknown',
+      type: 'unknown',
+      ip: '::ffff:127.0.0.1',
+      agent: 'got (https://github.com/sindresorhus/got)',
+    },
+  };
+
+  test('should work normally after setting up the library (using`.forRoot()`)', async (t) => {
+    const exporter = new OpenTelemetryHttpExporter(
+      'test',
+      'test',
+      '127.0.0.1:4318'
+    );
+    const stub = sinon.stub(exporter, 'sendAuditLog');
+
+    const testingServer = await createNestJSTestingServer({
+      AuditLogModule: AuditLogModule.forRoot({
+        exporter,
+      }),
+    });
+    const { httpServer, url, cleanupNestJSApp } = testingServer;
+    const response = await got(`${url}?id=1`);
+
+    t.true(httpServer.listening);
+    t.true(stub.called);
+    t.deepEqual(stub.firstCall.args, [auditLog1]);
+    t.is(response.body, 'Congratulations! You have found the cat 1!');
+    await cleanupNestJSApp();
+  });
+
+  test('should work normally after setting up the library (using`.forRootAsync()`)', async (t) => {
+    const exporter = new OpenTelemetryHttpExporter(
+      'test',
+      'test',
+      '127.0.0.1:4318'
+    );
+    const stub = sinon.stub(exporter, 'sendAuditLog');
+
+    const testingServer = await createNestJSTestingServer({
+      AuditLogModule: AuditLogModule.forRootAsync({
+        imports: [CatsModule],
+        inject: [CatsService],
+        useFactory: async (catsService: CatsService) => {
+          await delay(1);
+          return {
+            exporter,
+          };
+        },
+      }),
+    });
+    const { httpServer, url, cleanupNestJSApp } = testingServer;
+    const response = await got(`${url}?id=1`);
+
+    t.true(httpServer.listening);
+    t.true(stub.called);
+    t.deepEqual(stub.firstCall.args, [auditLog1]);
+    t.is(response.body, 'Congratulations! You have found the cat 1!');
+    await cleanupNestJSApp();
+  });
+
+  test('should send audit log with empty configuration and default exporter', async (t) => {
+    const testingServer = await createNestJSTestingServer({
+      AuditLogModule: AuditLogModule.forRoot(),
+    });
+    const { httpServer, url, cleanupNestJSApp } = testingServer;
+    const response = await got(`${url}?id=1`);
+
+    t.true(httpServer.listening);
+    t.is(response.body, 'Congratulations! You have found the cat 1!');
+    await cleanupNestJSApp();
+  });
+
+  test('should send audit log with empty configuration and default exporter, different logger', async (t) => {
+    const logger: Logger = new Logger('Test');
+    const testingServer = await createNestJSTestingServer({
+      AuditLogModule: AuditLogModule.forRoot({
+        exporter: new AuditLoggerDefaultExporter(logger),
+      }),
+    });
+    const { httpServer, url, cleanupNestJSApp } = testingServer;
+    const response = await got(`${url}?id=1`);
+
+    t.true(httpServer.listening);
+    t.is(response.body, 'Congratulations! You have found the cat 1!');
+    await cleanupNestJSApp();
+  });
+
+  test('should send audit log with resource_id_field_map from body', async (t) => {
+    const exporter = new OpenTelemetryHttpExporter(
+      'test',
+      'test',
+      '127.0.0.1:4318'
+    );
+    const stub = sinon.stub(exporter, 'sendAuditLog');
+
+    const testingServer = await createNestJSTestingServer({
+      AuditLogModule: AuditLogModule.forRoot({
+        exporter,
+      }),
+    });
+    const { httpServer, url, cleanupNestJSApp } = testingServer;
+    const response = await got.post(url, { json: { id: '1' } });
+
+    t.true(httpServer.listening);
+    t.true(stub.called);
+    t.deepEqual(stub.firstCall.args, [auditLog2]);
+    t.is(response.body, 'Congratulations! You created the cat 1!');
+    await cleanupNestJSApp();
+  });
+
+  test('should send audit log with default resource_id_field_map', async (t) => {
+    const exporter = new OpenTelemetryHttpExporter(
+      'test',
+      'test',
+      '127.0.0.1:4318'
+    );
+    const stub = sinon.stub(exporter, 'sendAuditLog');
+
+    const testingServer = await createNestJSTestingServer({
+      AuditLogModule: AuditLogModule.forRoot({
+        exporter,
+      }),
+    });
+    const { httpServer, url, cleanupNestJSApp } = testingServer;
+    const response = await got.post(`${url}/another`, { json: { id: '1' } });
+
+    t.true(httpServer.listening);
+    t.true(stub.called);
+    t.deepEqual(stub.firstCall.args, [auditLog2]);
+    t.is(response.body, 'Congratulations! You created the cat 1!');
+    await cleanupNestJSApp();
+  });
+
+  test('should send audit log with grpc exporter', async (t) => {
+    const exporter = new OpenTelemetryGrpcExporter(
+      'test',
+      'test',
+      '127.0.0.1:4317'
+    );
+    const stub = sinon.stub(exporter, 'sendAuditLog');
+
+    const testingServer = await createNestJSTestingServer({
+      AuditLogModule: AuditLogModule.forRoot({ exporter: exporter }),
+    });
+    const { httpServer, url, cleanupNestJSApp } = testingServer;
+    const response = await got(`${url}?id=1`);
+
+    t.true(httpServer.listening);
+    t.true(stub.called);
+    t.deepEqual(stub.firstCall.args, [auditLog1]);
+    t.is(response.body, 'Congratulations! You have found the cat 1!');
+    await cleanupNestJSApp();
+  });
+
+  test('should send audit log with real opentelemetry grpc exporter', async (t) => {
+    const exporter = new OpenTelemetryGrpcExporter(
+      'test',
+      'test',
+      '127.0.0.1:4317'
+    );
+
+    const testingServer = await createNestJSTestingServer({
+      AuditLogModule: AuditLogModule.forRoot({
+        exporter,
+      }),
+    });
+    const { httpServer, url, cleanupNestJSApp } = testingServer;
+    const response = await got.post(url, { json: { id: '1' } });
+
+    t.true(httpServer.listening);
+    t.is(response.body, 'Congratulations! You created the cat 1!');
+    await cleanupNestJSApp();
+  });
+
+  test('should send audit log with real opentelemetry http exporter', async (t) => {
+    const exporter = new OpenTelemetryHttpExporter(
+      'test',
+      'test',
+      '127.0.0.1:4318'
+    );
+
+    const testingServer = await createNestJSTestingServer({
+      AuditLogModule: AuditLogModule.forRoot({
+        exporter,
+      }),
+    });
+    const { httpServer, url, cleanupNestJSApp } = testingServer;
+    const response = await got.post(url, { json: { id: '1' } });
+
+    t.true(httpServer.listening);
+    t.is(response.body, 'Congratulations! You created the cat 1!');
+    await cleanupNestJSApp();
+  });
+
+  test('should NOT send audit log without decorator', async (t) => {
+    const exporter = new AuditLoggerDefaultExporter();
+    const stub = sinon.stub(exporter, 'sendAuditLog');
+
+    const testingServer = await createNestJSTestingServer({
+      AuditLogModule: AuditLogModule.forRoot({ exporter: exporter }),
+    });
+    const { httpServer, url, cleanupNestJSApp } = testingServer;
+    const response = await got(`${url}/no-audit?id=1`);
+
+    t.true(httpServer.listening);
+    t.false(stub.called);
+    t.is(response.body, 'Congratulations! You have found the cat 1!');
+    await cleanupNestJSApp();
+  });
+
+  test('should send audit log with FAILED status', async (t) => {
+    const exporter = new AuditLoggerDefaultExporter();
+    const stub = sinon.stub(exporter, 'sendAuditLog');
+
+    const testingServer = await createNestJSTestingServer({
+      AuditLogModule: AuditLogModule.forRoot({ exporter: exporter }),
+    });
+    const { httpServer, url, cleanupNestJSApp } = testingServer;
+    const response = got(`${url}/failed?id=1`);
+
+    t.true(httpServer.listening);
+    await t.throwsAsync(response);
+    t.true(stub.called);
+    t.deepEqual(stub.firstCall.args, [auditLog3]);
+    await cleanupNestJSApp();
+  });
+};
