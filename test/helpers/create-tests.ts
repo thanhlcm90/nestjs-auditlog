@@ -1,4 +1,3 @@
-import KeepAliveHttpAgent from 'agentkeepalive';
 import test from 'ava';
 import safeGot from 'got';
 import sinon from 'sinon';
@@ -10,7 +9,6 @@ import {
   OpenTelemetryHttpExporter,
 } from '../../src';
 
-import { CatsController } from './test-controller';
 import { CatsModule } from './test-module';
 import { CatsService } from './test-service';
 import type { NestJSTestingServerFactory } from './types';
@@ -106,7 +104,7 @@ export const createTests = (
       AuditLogModule: AuditLogModule.forRootAsync({
         imports: [CatsModule],
         inject: [CatsService],
-        useFactory: async (catsService: CatsService) => {
+        useFactory: async (_catsService: CatsService) => {
           await delay(1);
           return {
             exporter,
