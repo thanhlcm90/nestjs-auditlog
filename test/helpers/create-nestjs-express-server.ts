@@ -13,18 +13,13 @@ export const createNestJSExpressServer: NestJSTestingServerFactory = async (
   });
 
   const app = await NestFactory.create(AppModule, { logger: false });
-
   const httpServer = app.getHttpServer();
-  const getConnections = () => {
-    return promisify(httpServer.getConnections.bind(httpServer))();
-  };
 
   await app.listen(0);
   const port = httpServer.address().port;
   const url = `http://localhost:${port}`;
 
   return {
-    getConnections,
     port,
     httpServer,
     url,

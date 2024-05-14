@@ -7,8 +7,10 @@ import {
   IAuditLogConfigOptions,
 } from './audit-log.interface';
 import { AuditLogService } from './audit-log.service';
-import { AUDIT_LOG_CONFIG_OPTIONS } from './constant';
-import { AuditLoggerDefaultExporter } from './exporters';
+import {
+  AUDIT_LOG_CONFIG_OPTIONS,
+  DEFAULT_AUDIT_LOG_CONFIG_OPTIONS,
+} from './constant';
 
 @Module({})
 export class AuditLogModule {
@@ -18,7 +20,7 @@ export class AuditLogModule {
       providers: [
         {
           provide: AUDIT_LOG_CONFIG_OPTIONS,
-          useValue: options ?? { exporter: new AuditLoggerDefaultExporter() },
+          useValue: options ?? DEFAULT_AUDIT_LOG_CONFIG_OPTIONS,
         },
         AuditLogService,
         {
@@ -26,6 +28,7 @@ export class AuditLogModule {
           useClass: AuditLogInterceptor,
         },
       ],
+      exports: [AuditLogService],
     };
   }
 
@@ -48,6 +51,7 @@ export class AuditLogModule {
         },
         ...providers,
       ],
+      exports: [AuditLogService],
     };
   }
 }

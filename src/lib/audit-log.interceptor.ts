@@ -20,8 +20,8 @@ import {
 @Injectable()
 export class AuditLogInterceptor implements NestInterceptor {
   constructor(
-    private readonly auditLogService: AuditLogService,
-    private readonly _reflector: Reflector
+    private readonly _reflector: Reflector,
+    private readonly auditLogService: AuditLogService
   ) {}
 
   private async sendAuditLog(options, request, status: 'SUCCEEDED' | 'FAILED') {

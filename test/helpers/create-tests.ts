@@ -4,6 +4,7 @@ import sinon from 'sinon';
 
 import {
   AuditLogModule,
+  AuditLogService,
   AuditLoggerDefaultExporter,
   OpenTelemetryGrpcExporter,
   OpenTelemetryHttpExporter,
@@ -62,6 +63,19 @@ export const createTests = (
     actor: {
       id: 'unknown',
       type: 'unknown',
+      agent: 'got (https://github.com/sindresorhus/got)',
+    },
+  };
+  const auditLog4 = {
+    resource: { id: '1', type: 'Cat' },
+    operation: {
+      id: 'createTheCat',
+      type: 'Create',
+      status: 'SUCCEEDED',
+    },
+    actor: {
+      id: 'daniel',
+      type: 'admin',
       agent: 'got (https://github.com/sindresorhus/got)',
     },
   };
@@ -201,6 +215,110 @@ export const createTests = (
     t.true(httpServer.listening);
     t.true(stub.called);
     t.deepEqual(removeIp(stub.firstCall.args), [auditLog2]);
+    t.is(response.body, 'Congratulations! You created the cat 1!');
+    await cleanupNestJSApp();
+  });
+
+  test('should send audit log with fixed resource_id', async (t) => {
+    const exporter = new OpenTelemetryHttpExporter(
+      'test',
+      'test',
+      '127.0.0.1:4318'
+    );
+    const stub = sinon.stub(exporter, 'sendAuditLog');
+
+    const testingServer = await createNestJSTestingServer({
+      AuditLogModule: AuditLogModule.forRoot({
+        exporter,
+      }),
+    });
+    const { httpServer, url, cleanupNestJSApp } = testingServer;
+    const response = await got.post(`${url}/fixed`);
+
+    t.true(httpServer.listening);
+    t.true(stub.called);
+    t.deepEqual(removeIp(stub.firstCall.args), [auditLog2]);
+    t.is(response.body, 'Congratulations! You created the cat 1!');
+    await cleanupNestJSApp();
+  });
+
+  test('should send audit log with resource_id is unknow', async (t) => {
+    const exporter = new OpenTelemetryHttpExporter(
+      'test',
+      'test',
+      '127.0.0.1:4318'
+    );
+    const stub = sinon.stub(exporter, 'sendAuditLog');
+
+    const testingServer = await createNestJSTestingServer({
+      AuditLogModule: AuditLogModule.forRoot({
+        exporter,
+      }),
+    });
+    const { httpServer, url, cleanupNestJSApp } = testingServer;
+    const response = await got.post(`${url}/unknown`);
+
+    t.true(httpServer.listening);
+    t.true(stub.called);
+    t.deepEqual(removeIp(stub.firstCall.args), [
+      {
+        ...auditLog2,
+        resource: {
+          ...auditLog2.resource,
+          id: 'unknown',
+        },
+      },
+    ]);
+    t.is(response.body, 'Congratulations! You created the cat unknown!');
+    await cleanupNestJSApp();
+  });
+
+  test('should send audit log with actor from body', async (t) => {
+    const exporter = new OpenTelemetryHttpExporter(
+      'test',
+      'test',
+      '127.0.0.1:4318'
+    );
+    const stub = sinon.stub(exporter, 'sendAuditLog');
+
+    const testingServer = await createNestJSTestingServer({
+      AuditLogModule: AuditLogModule.forRoot({
+        exporter,
+      }),
+    });
+    const { httpServer, url, cleanupNestJSApp } = testingServer;
+    const response = await got.post(`${url}/actor/actor_id_field_map`, {
+      json: { id: '1', username: 'daniel', role: 'admin' },
+    });
+
+    t.true(httpServer.listening);
+    t.true(stub.called);
+    t.deepEqual(removeIp(stub.firstCall.args), [auditLog4]);
+    t.is(response.body, 'Congratulations! You created the cat 1!');
+    await cleanupNestJSApp();
+  });
+
+  test('should send audit log with actor from guard', async (t) => {
+    const exporter = new OpenTelemetryHttpExporter(
+      'test',
+      'test',
+      '127.0.0.1:4318'
+    );
+    const stub = sinon.stub(exporter, 'sendAuditLog');
+
+    const testingServer = await createNestJSTestingServer({
+      AuditLogModule: AuditLogModule.forRoot({
+        exporter,
+      }),
+    });
+    const { httpServer, url, cleanupNestJSApp } = testingServer;
+    const response = await got.post(`${url}/actor/guard`, {
+      json: { id: '1' },
+    });
+
+    t.true(httpServer.listening);
+    t.true(stub.called);
+    t.deepEqual(removeIp(stub.firstCall.args), [auditLog4]);
     t.is(response.body, 'Congratulations! You created the cat 1!');
     await cleanupNestJSApp();
   });
