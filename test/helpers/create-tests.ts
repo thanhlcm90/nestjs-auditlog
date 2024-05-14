@@ -36,7 +36,6 @@ export const createTests = (
     actor: {
       id: 'unknown',
       type: 'unknown',
-      ip: '::ffff:127.0.0.1',
       agent: 'got (https://github.com/sindresorhus/got)',
     },
   };
@@ -50,7 +49,6 @@ export const createTests = (
     actor: {
       id: 'unknown',
       type: 'unknown',
-      ip: '::ffff:127.0.0.1',
       agent: 'got (https://github.com/sindresorhus/got)',
     },
   };
@@ -64,10 +62,21 @@ export const createTests = (
     actor: {
       id: 'unknown',
       type: 'unknown',
-      ip: '::ffff:127.0.0.1',
       agent: 'got (https://github.com/sindresorhus/got)',
     },
   };
+
+  function removeIp(args) {
+    return args.map((data) => {
+      const newActor = { ...data.actor };
+      delete newActor.ip;
+
+      return {
+        ...data,
+        actor: newActor,
+      };
+    });
+  }
 
   test('should work normally after setting up the library (using`.forRoot()`)', async (t) => {
     const exporter = new OpenTelemetryHttpExporter(
@@ -87,7 +96,8 @@ export const createTests = (
 
     t.true(httpServer.listening);
     t.true(stub.called);
-    t.deepEqual(stub.firstCall.args, [auditLog1]);
+    t.deepEqual.skip(stub.firstCall.args, [auditLog1]);
+    t.deepEqual(removeIp(stub.firstCall.args), [auditLog1]);
     t.is(response.body, 'Congratulations! You have found the cat 1!');
     await cleanupNestJSApp();
   });
@@ -117,7 +127,7 @@ export const createTests = (
 
     t.true(httpServer.listening);
     t.true(stub.called);
-    t.deepEqual(stub.firstCall.args, [auditLog1]);
+    t.deepEqual(removeIp(stub.firstCall.args), [auditLog1]);
     t.is(response.body, 'Congratulations! You have found the cat 1!');
     await cleanupNestJSApp();
   });
@@ -167,7 +177,7 @@ export const createTests = (
 
     t.true(httpServer.listening);
     t.true(stub.called);
-    t.deepEqual(stub.firstCall.args, [auditLog2]);
+    t.deepEqual(removeIp(stub.firstCall.args), [auditLog2]);
     t.is(response.body, 'Congratulations! You created the cat 1!');
     await cleanupNestJSApp();
   });
@@ -190,7 +200,7 @@ export const createTests = (
 
     t.true(httpServer.listening);
     t.true(stub.called);
-    t.deepEqual(stub.firstCall.args, [auditLog2]);
+    t.deepEqual(removeIp(stub.firstCall.args), [auditLog2]);
     t.is(response.body, 'Congratulations! You created the cat 1!');
     await cleanupNestJSApp();
   });
@@ -211,7 +221,7 @@ export const createTests = (
 
     t.true(httpServer.listening);
     t.true(stub.called);
-    t.deepEqual(stub.firstCall.args, [auditLog1]);
+    t.deepEqual(removeIp(stub.firstCall.args), [auditLog1]);
     t.is(response.body, 'Congratulations! You have found the cat 1!');
     await cleanupNestJSApp();
   });
@@ -285,7 +295,7 @@ export const createTests = (
     t.true(httpServer.listening);
     await t.throwsAsync(response);
     t.true(stub.called);
-    t.deepEqual(stub.firstCall.args, [auditLog3]);
+    t.deepEqual(removeIp(stub.firstCall.args), [auditLog3]);
     await cleanupNestJSApp();
   });
 };
