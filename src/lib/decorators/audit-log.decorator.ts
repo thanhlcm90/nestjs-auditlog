@@ -1,27 +1,28 @@
 import { applyDecorators, SetMetadata } from '@nestjs/common';
 
+import {
+  IAuditLogActor,
+  IAuditLogOperation,
+  IAuditLogResource,
+} from '../audit-log.interface';
+
 export const META_AUDIT_LOG = Symbol.for('__audit_log__');
 
 export interface IAuditLogDecoratorOptions {
   /**
-   * the resource.type for that api
+   * the resource for that audit
    */
-  resource_type: string;
+  resource?: Partial<IAuditLogResource>;
 
   /**
-   * the operator.type for that api
+   * the operation for that audit
    */
-  operator_type: string;
+  operation?: Partial<IAuditLogOperation>;
 
   /**
-   * the operator.id for that api
+   * the actor for that audit
    */
-  operator_id: string;
-
-  /**
-   * the resource.id for that api. If null, get from resource_id_field_map
-   */
-  resource_id?: string;
+  actor?: Partial<IAuditLogActor>;
 
   /**
    * field mapping from request to get resource.id
@@ -43,11 +44,11 @@ export interface IAuditLogDecoratorOptions {
 }
 
 export function AuditLog(
-  options: IAuditLogDecoratorOptions
+  options?: IAuditLogDecoratorOptions
 ): (
   target: unknown,
   propertyKey?: string | symbol,
   descriptor?: TypedPropertyDescriptor<unknown>
 ) => void {
-  return applyDecorators(SetMetadata(META_AUDIT_LOG, options));
+  return applyDecorators(SetMetadata(META_AUDIT_LOG, options ?? {}));
 }

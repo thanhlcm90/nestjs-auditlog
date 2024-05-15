@@ -1,5 +1,6 @@
 import { Logger, SeverityNumber } from '@opentelemetry/api-logs';
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
+import { OTLPExporterNodeConfigBase } from '@opentelemetry/otlp-exporter-base';
 import { Resource } from '@opentelemetry/resources';
 import {
   LoggerProvider,
@@ -16,7 +17,11 @@ export class OpenTelemetryHttpExporter implements IAuditLogExporter {
   private loggerProvider: LoggerProvider;
   private loggerOtel: Logger;
 
-  constructor(serviceName: string, serviceNamespace: string, otelUrl: string) {
+  constructor(
+    serviceName: string,
+    serviceNamespace: string,
+    config: OTLPExporterNodeConfigBase
+  ) {
     const resource = new Resource({
       [SEMRESATTRS_SERVICE_NAME]: serviceName,
       [SEMRESATTRS_SERVICE_NAMESPACE]: serviceNamespace,
@@ -27,18 +32,13 @@ export class OpenTelemetryHttpExporter implements IAuditLogExporter {
     });
 
     this.loggerProvider.addLogRecordProcessor(
-      new SimpleLogRecordProcessor(
-        new OTLPLogExporter({
-          url: otelUrl,
-          keepAlive: true,
-        })
-      )
+      new SimpleLogRecordProcessor(new OTLPLogExporter(config))
     );
 
     this.loggerOtel = this.loggerProvider.getLogger('default');
   }
 
-  sendAuditLog(log: IAuditLog) {
+  async sendAuditLog(log: IAuditLog) {
     this.loggerOtel.emit({
       severityNumber: SeverityNumber.INFO,
       severityText: 'INFO',

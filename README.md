@@ -19,6 +19,7 @@
 - [Installation](#installation)
 - [Example](#example)
 - [Configuration](#configuration)
+- [Exporters](#exporters)
 - [Contact and Feedback](#contact-and-feedback)
 - [License](#license)
 
@@ -52,6 +53,8 @@ import { AuditLogModule } from 'nestjs-auditlog';
 class AppModule {}
 ```
 
+Please note that that `AuditLogModule` is global module.
+
 2. Next, put the decorator `@AuditLog` to every api you want to send audit log.
 
 ```typescript
@@ -61,10 +64,14 @@ import { AuditLog } from 'nestjs-auditlog';
 @Controller('/')
 export class CatsController {
   @AuditLog({
-    resource_type: 'Cat',
+    resource: {
+      type: 'Cat',
+    },
+    operation: {
+      id: 'findTheCat',
+      type: 'Query',
+    },
     resource_id_field_map: 'query.id',
-    operator_id: 'findTheCat',
-    operator_type: 'Query',
   })
   @Get()
   findTheCat(@Query('id') id: string): any {
@@ -72,10 +79,18 @@ export class CatsController {
   }
 
   @AuditLog({
-    resource_type: 'Cat',
+    resource: {
+      type: 'Cat',
+    },
+    operation: {
+      type: 'Create',
+      // if you ignore the id, we will get method name createTheCat as operation id
+    },
+    actor: {
+      id: 'daniel',
+      type: 'admin'
+    }
     resource_id_field_map: 'body.id',
-    operator_id: 'createTheCat',
-    operator_type: 'Create',
   })
   @Post()
   createTheCat(@Body() body: any): any {
@@ -85,6 +100,47 @@ export class CatsController {
 ```
 
 Please note that the above code snippets demonstrate the basic setup of `nestjs-auditlog` in your NestJS application. Make sure to adjust the code based on your specific application requirements and configuration.
+
+We have many similar decorators for default defined operation type `Create`, `Update`, `Remove`, `Query`. You can check them on folder `decorators`:
+
+- `AuditLogCreate`: decorator with default `operation.type = 'Create'`
+
+- `AuditLogUpdate`: decorator with default `operation.type = 'Update'`
+
+- `AuditLogRemove`: decorator with default `operation.type = 'Remove'`
+
+- `AuditLogQuery`: decorator with default `operation.type = 'Query'`
+
+3. Another way, we can use the service `AuditLogService` to send audit log
+
+```typescript
+import { Controller, Get, Query, Body, Post } from '@nestjs/common';
+import { AuditLog } from 'nestjs-auditlog';
+
+@Controller('/')
+export class CatsController {
+  constructor(private readonly auditLogService: AuditLogService) {}
+
+  @Get()
+  async findTheCat(@Query('id') id: string) {
+    await this.auditLogService.sendAuditLog({
+      resource: {
+        id,
+        type: 'Cat',
+      },
+      operation: {
+        id: 'findTheCat',
+        type: 'Query',
+      },
+      actor: {
+        id: 'daniel',
+        type: 'admin',
+      },
+    });
+    return `Congratulations! You have found the cat ${id}!`;
+  }
+}
+```
 
 ## Configuration
 
@@ -114,6 +170,8 @@ import { AuditLogModule } from 'nestjs-auditlog';
 })
 class AppModule {}
 ```
+
+With Zero configuration, we will use default `AuditLoggerDefaultExporter` that print auditlog to `stdout` by using default `Logger`
 
 ### Asynchronous configuration
 
@@ -154,6 +212,16 @@ class ConfigModule {}
 })
 class AppModule {}
 ```
+
+## Exporters
+
+We have many Auditlog Exporter, please check the folder `exporters`. Some examples:
+
+- `AuditLoggerDefaultExporter`: the default exporter for Zero configuration
+
+- `OpenTelemetryGrpcExporter`: the exporter that will emit the audit log to Opentelemetry host by GRPC method
+
+- `OpenTelemetryHttpExporter`: the exporter that will emit the audit log to Opentelemetry host by HTTP method
 
 ## Contact and Feedback
 

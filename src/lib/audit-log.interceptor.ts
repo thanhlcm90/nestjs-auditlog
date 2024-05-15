@@ -13,6 +13,14 @@ import { tap } from 'rxjs/operators';
 import { IAuditLog } from './audit-log.interface';
 import { AuditLogService } from './audit-log.service';
 import {
+  DEFAULT_ACTOR_ID_FIELD_MAP,
+  DEFAULT_ACTOR_TYPE_FIELD_MAP,
+  DEFAULT_RESOURCE_ID_FIELD_MAP,
+  DEFAULT_UNKNOWN_VALUE,
+  OperationStatus,
+  REQUEST_HEADER_USER_AGENT,
+} from './constant';
+import {
   IAuditLogDecoratorOptions,
   META_AUDIT_LOG,
 } from './decorators/audit-log.decorator';
@@ -24,29 +32,41 @@ export class AuditLogInterceptor implements NestInterceptor {
     private readonly auditLogService: AuditLogService
   ) {}
 
-  private async sendAuditLog(options, request, status: 'SUCCEEDED' | 'FAILED') {
+  private async sendAuditLog(
+    options: IAuditLogDecoratorOptions,
+    request,
+    status: OperationStatus
+  ) {
     const ip = getClientIp(request);
     const auditLog: IAuditLog = {
       resource: {
         id:
-          options.resource_id ??
-          _.get(request, options.resource_id_field_map ?? 'body.id') ??
-          'unknown',
-        type: options.resource_type,
+          options.resource?.id ??
+          _.get(
+            request,
+            options.resource_id_field_map ?? DEFAULT_RESOURCE_ID_FIELD_MAP
+          ) ??
+          DEFAULT_UNKNOWN_VALUE,
+        type: options.resource?.type ?? DEFAULT_UNKNOWN_VALUE,
       },
       operation: {
-        id: options.operator_id,
-        type: options.operator_type,
+        id: options.operation.id ?? DEFAULT_UNKNOWN_VALUE,
+        type: options.operation.type ?? DEFAULT_UNKNOWN_VALUE,
         status,
       },
       actor: {
         id:
-          _.get(request, options.actor_id_field_map ?? 'user.id') ?? 'unknown',
+          _.get(
+            request,
+            options.actor_id_field_map ?? DEFAULT_ACTOR_ID_FIELD_MAP
+          ) ?? DEFAULT_UNKNOWN_VALUE,
         type:
-          _.get(request, options.actor_type_field_map ?? 'user.role') ??
-          'unknown',
+          _.get(
+            request,
+            options.actor_type_field_map ?? DEFAULT_ACTOR_TYPE_FIELD_MAP
+          ) ?? DEFAULT_UNKNOWN_VALUE,
         ip,
-        agent: request.headers['user-agent'],
+        agent: request.headers[REQUEST_HEADER_USER_AGENT],
       },
     };
 
@@ -62,21 +82,33 @@ export class AuditLogInterceptor implements NestInterceptor {
         META_AUDIT_LOG,
         context.getHandler()
       );
+
+    if (options) {
+      options.operation = {
+        id: context.getHandler().name,
+        ...options.operation,
+      };
+    }
+
     const request: Request = context.switchToHttp().getRequest();
 
     return next.handle().pipe(
       tap({
         next: async () => {
           if (options) {
-            await this.sendAuditLog(options, request, 'SUCCEEDED');
+            await this.sendAuditLog(
+              options,
+              request,
+              OperationStatus.SUCCEEDED
+            );
           }
         },
         error: async () => {
           if (options) {
-            await this.sendAuditLog(options, request, 'FAILED');
+            await this.sendAuditLog(options, request, OperationStatus.FAILED);
           }
         },
       })
     );
   }
-}
+} /* istanbul ignore next */

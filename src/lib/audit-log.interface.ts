@@ -119,7 +119,7 @@ export interface IAuditLog {
 }
 
 export interface IAuditLogExporter {
-  sendAuditLog(log: IAuditLog);
+  sendAuditLog(log: IAuditLog): Promise<any>;
 }
 
 export interface IAuditLogConfigOptions {

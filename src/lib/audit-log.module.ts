@@ -1,4 +1,4 @@
-import { DynamicModule, Module } from '@nestjs/common';
+import { DynamicModule, Global, Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 
 import { AuditLogInterceptor } from './audit-log.interceptor';
@@ -12,6 +12,7 @@ import {
   DEFAULT_AUDIT_LOG_CONFIG_OPTIONS,
 } from './constant';
 
+@Global()
 @Module({})
 export class AuditLogModule {
   static forRoot(options?: IAuditLogConfigOptions): DynamicModule {

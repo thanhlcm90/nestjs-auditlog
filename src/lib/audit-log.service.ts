@@ -13,12 +13,12 @@ export class AuditLogService {
 
   constructor(
     @Inject(AUDIT_LOG_CONFIG_OPTIONS)
-    options: IAuditLogConfigOptions
+    options: Record<string, any> | IAuditLogConfigOptions
   ) {
     this.exporter = options.exporter;
   }
 
-  sendAuditLog(log: IAuditLog) {
-    this.exporter.sendAuditLog(log);
+  async sendAuditLog(log: IAuditLog) {
+    return this.exporter.sendAuditLog(log);
   }
 }

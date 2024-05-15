@@ -1,7 +1,8 @@
-import { promisify } from 'util';
 import { NestFactory } from '@nestjs/core';
+
+import { CatsModule } from '../app/test-module';
+
 import { createAppModule } from './create-app-module';
-import { CatsModule } from './test-module';
 import type { NestJSTestingServerFactory } from './types';
 
 export const createNestJSExpressServer: NestJSTestingServerFactory = async (
@@ -9,7 +10,7 @@ export const createNestJSExpressServer: NestJSTestingServerFactory = async (
 ) => {
   const { AuditLogModule } = params;
   const AppModule = createAppModule({
-    imports: [CatsModule, AuditLogModule],
+    imports: [AuditLogModule, CatsModule],
   });
 
   const app = await NestFactory.create(AppModule, { logger: false });
