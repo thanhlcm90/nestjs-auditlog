@@ -3,17 +3,20 @@ import { DEFAULT_OPERATION_TYPE_UPDATE } from '../constant';
 import { AuditLog, IAuditLogDecoratorOptions } from './audit-log.decorator';
 
 export function AuditLogUpdate(
-  options?: IAuditLogDecoratorOptions
+  /**
+   * audit data
+   */
+  data?: IAuditLogDecoratorOptions
 ): (
   target: unknown,
   propertyKey?: string | symbol,
   descriptor?: TypedPropertyDescriptor<unknown>
 ) => void {
   return AuditLog({
-    ...options,
+    ...data,
     operation: {
       type: DEFAULT_OPERATION_TYPE_UPDATE,
-      ...options?.operation,
+      ...data?.operation,
     },
   });
 }

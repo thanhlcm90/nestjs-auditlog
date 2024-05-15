@@ -17,13 +17,11 @@ import {
   DEFAULT_ACTOR_TYPE_FIELD_MAP,
   DEFAULT_RESOURCE_ID_FIELD_MAP,
   DEFAULT_UNKNOWN_VALUE,
+  META_AUDIT_LOG,
   OperationStatus,
   REQUEST_HEADER_USER_AGENT,
 } from './constant';
-import {
-  IAuditLogDecoratorOptions,
-  META_AUDIT_LOG,
-} from './decorators/audit-log.decorator';
+import { IAuditLogDecoratorOptions } from './decorators/audit-log.decorator';
 
 @Injectable()
 export class AuditLogInterceptor implements NestInterceptor {

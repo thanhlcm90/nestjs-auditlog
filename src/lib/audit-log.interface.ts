@@ -1,4 +1,14 @@
-import { INestApplication, ModuleMetadata } from '@nestjs/common';
+import { ModuleMetadata } from '@nestjs/common';
+
+export interface IOtlpExporterConfig {
+  headers?: Partial<Record<string, unknown>>;
+  hostname?: string;
+  url?: string;
+  concurrencyLimit?: number;
+  /** Maximum time the OTLP exporter will wait for each batch export.
+   * The default value is 10000ms. */
+  timeoutMillis?: number;
+}
 
 export interface IAuditLogResource {
   /**
@@ -96,7 +106,7 @@ export interface IAuditLogActor {
   ip?: string;
 
   /**
-   * The device's agent of actor that make request
+   * The device's user-agent of actor that make request
    */
   agent?: string;
 }
@@ -118,6 +128,9 @@ export interface IAuditLog {
   actor: IAuditLogActor;
 }
 
+/**
+ * The interface of audit log exporter
+ */
 export interface IAuditLogExporter {
   sendAuditLog(log: IAuditLog): Promise<any>;
 }
@@ -135,11 +148,4 @@ export interface IAuditLogAsyncConfigOptions
     ...args: any[]
   ) => IAuditLogConfigOptions | Promise<IAuditLogConfigOptions>;
   inject?: any[];
-}
-
-export interface ISetupFunctionParams {
-  /**
-   * Your NestJS application.
-   */
-  app: INestApplication;
 }

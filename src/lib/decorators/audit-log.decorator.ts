@@ -5,8 +5,7 @@ import {
   IAuditLogOperation,
   IAuditLogResource,
 } from '../audit-log.interface';
-
-export const META_AUDIT_LOG = Symbol.for('__audit_log__');
+import { META_AUDIT_LOG } from '../constant';
 
 export interface IAuditLogDecoratorOptions {
   /**
@@ -44,11 +43,14 @@ export interface IAuditLogDecoratorOptions {
 }
 
 export function AuditLog(
-  options?: IAuditLogDecoratorOptions
+  /**
+   * audit data
+   */
+  data?: IAuditLogDecoratorOptions
 ): (
   target: unknown,
   propertyKey?: string | symbol,
   descriptor?: TypedPropertyDescriptor<unknown>
 ) => void {
-  return applyDecorators(SetMetadata(META_AUDIT_LOG, options ?? {}));
+  return applyDecorators(SetMetadata(META_AUDIT_LOG, data ?? {}));
 }
