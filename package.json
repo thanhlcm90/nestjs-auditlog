@@ -1,6 +1,6 @@
 {
   "name": "nestjs-auditlog",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A powerful package for auditlog using opentelemetry in NestJS applications",
   "main": "build/main/index.js",
   "types": "build/main/index.d.ts",
