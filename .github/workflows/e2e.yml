@@ -29,7 +29,4 @@ jobs:
         run: npm run build
 
       - name: Run test
-        run: npm run cov
-
-      - name: Coveralls GitHub Action
-        uses: coverallsapp/github-action@v2.3.0
+        run: npm run test:unit
