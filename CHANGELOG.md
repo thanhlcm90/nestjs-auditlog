@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.1.3](https://github.com/thanhlcm90/nestjs-auditlog/compare/v1.1.0...v1.1.3) (2024-05-16)
+
+
+### Bug Fixes
+
+* move opentelemetry to dependencies ([05523c0](https://github.com/thanhlcm90/nestjs-auditlog/commit/05523c0854443ba851c5ce7e7662cf9289d8c320))
+
 ## [1.1.0](https://github.com/thanhlcm90/nestjs-auditlog/compare/v1.0.0...v1.1.0) (2024-05-15)
 
 
