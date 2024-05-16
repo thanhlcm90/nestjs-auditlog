@@ -133,6 +133,7 @@ export interface IAuditLog {
  */
 export interface IAuditLogExporter {
   sendAuditLog(log: IAuditLog): Promise<any>;
+  shutdown(): Promise<void>;
 }
 
 export interface IAuditLogConfigOptions {

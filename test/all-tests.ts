@@ -698,42 +698,6 @@ export const createTests = (
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with real opentelemetry grpc exporter', async (t) => {
-    const exporter = new OpenTelemetryGrpcExporter('test', 'test', {
-      url: '127.0.0.1:4317',
-    });
-
-    const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
-        exporter,
-      }),
-    });
-    const { httpServer, url, cleanupNestJSApp } = testingServer;
-    const response = await got.post(url, { json: { id: '1' } });
-
-    t.true(httpServer.listening);
-    t.is(response.body, 'Congratulations! You created the cat 1!');
-    await cleanupNestJSApp();
-  });
-
-  test('should send audit log with real opentelemetry http exporter', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
-
-    const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
-        exporter,
-      }),
-    });
-    const { httpServer, url, cleanupNestJSApp } = testingServer;
-    const response = await got.post(url, { json: { id: '1' } });
-
-    t.true(httpServer.listening);
-    t.is(response.body, 'Congratulations! You created the cat 1!');
-    await cleanupNestJSApp();
-  });
-
   test('should NOT send audit log without decorator', async (t) => {
     const exporter = new AuditLoggerDefaultExporter();
     const stub = sinon.stub(exporter, 'sendAuditLog');
@@ -802,5 +766,45 @@ export const createTests = (
     t.true(exporterStub.called);
     t.deepEqual(exporterStub.firstCall.args, [auditLog4]);
     await cleanupNestJSApp();
+  });
+
+  test('should send audit log with real opentelemetry grpc exporter', async (t) => {
+    const exporter = new OpenTelemetryGrpcExporter('test', 'test', {
+      url: '127.0.0.1:4317',
+    });
+    const exporterStub = sinon.stub(exporter, 'shutdown');
+
+    const testingServer = await createNestJSTestingServer({
+      AuditLogModule: AuditLogModule.forRoot({
+        exporter,
+      }),
+    });
+    const { httpServer, url, cleanupNestJSApp } = testingServer;
+    const response = await got.post(url, { json: { id: '1' } });
+
+    t.true(httpServer.listening);
+    t.is(response.body, 'Congratulations! You created the cat 1!');
+    await cleanupNestJSApp();
+    t.true(exporterStub.called);
+  });
+
+  test('should send audit log with real opentelemetry http exporter', async (t) => {
+    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+      url: '127.0.0.1:4318',
+    });
+    const exporterStub = sinon.stub(exporter, 'shutdown');
+
+    const testingServer = await createNestJSTestingServer({
+      AuditLogModule: AuditLogModule.forRoot({
+        exporter,
+      }),
+    });
+    const { httpServer, url, cleanupNestJSApp } = testingServer;
+    const response = await got.post(url, { json: { id: '1' } });
+
+    t.true(httpServer.listening);
+    t.is(response.body, 'Congratulations! You created the cat 1!');
+    await cleanupNestJSApp();
+    t.true(exporterStub.called);
   });
 };

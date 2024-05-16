@@ -14,6 +14,8 @@ export class AuditLoggerDefaultExporter implements IAuditLogExporter {
     }
   }
 
+  async shutdown() {}
+
   async sendAuditLog(log: IAuditLog) {
     this._logger.log(
       `The actor ${log.actor.type} ${log.actor.id} did the operator ${log.operation.type} ${log.operation.id} on the resource ${log.resource.type} ${log.resource.id}`,

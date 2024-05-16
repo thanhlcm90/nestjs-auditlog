@@ -41,6 +41,10 @@ export class OpenTelemetryGrpcExporter implements IAuditLogExporter {
     this.loggerOtel = this.loggerProvider.getLogger('default');
   }
 
+  async shutdown() {
+    await this.loggerProvider.shutdown();
+  }
+
   async sendAuditLog(log: IAuditLog) {
     this.loggerOtel.emit({
       severityNumber: SeverityNumber.INFO,

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BeforeApplicationShutdown, Inject, Injectable } from '@nestjs/common';
 
 import {
   IAuditLog,
@@ -8,7 +8,7 @@ import {
 import { AUDIT_LOG_CONFIG_OPTIONS } from './constant';
 
 @Injectable()
-export class AuditLogService {
+export class AuditLogService implements BeforeApplicationShutdown {
   private exporter: IAuditLogExporter;
 
   constructor(
@@ -20,5 +20,9 @@ export class AuditLogService {
 
   async sendAuditLog(log: IAuditLog) {
     return this.exporter.sendAuditLog(log);
+  }
+
+  async beforeApplicationShutdown(): Promise<void> {
+    await this.exporter.shutdown();
   }
 }
