@@ -1,12 +1,11 @@
 {
   "name": "nestjs-auditlog",
-  "version": "1.1.0",
+  "version": "1.1.2",
   "description": "A powerful package for auditlog using opentelemetry in NestJS applications",
   "main": "build/main/index.js",
   "types": "build/main/index.d.ts",
   "license": "MIT",
   "author": "Daniel Le <thanhlcm90@gmail.com>",
-  "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/thanhlcm90/nestjs-auditlog"
