@@ -73,13 +73,11 @@
     "got": "^11.8.2",
     "husky": "^7.0.1",
     "lint-staged": "^11.1.0",
-    "lodash": "^4.17.21",
     "npm-run-all": "^4.1.5",
     "nyc": "^15.1.0",
     "open-cli": "^7.2.0",
     "prettier": "^2.1.1",
     "reflect-metadata": "^0.1.12",
-    "request-ip": "^3.3.0",
     "sinon": "^11.1.2",
     "standard-version": "^9.0.0",
     "ts-node": "^9.0.0",
@@ -96,7 +94,8 @@
     "@opentelemetry/exporter-logs-otlp-http": "^0.51.1",
     "@opentelemetry/resources": "^1.24.1",
     "@opentelemetry/sdk-node": "^0.51.1",
-    "@opentelemetry/semantic-conventions": "^1.24.1"
+    "@opentelemetry/semantic-conventions": "^1.24.1",
+    "request-ip": "^3.3.0"
   },
   "files": [
     "build/main",

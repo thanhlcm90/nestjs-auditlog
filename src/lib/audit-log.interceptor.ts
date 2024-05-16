@@ -5,7 +5,6 @@ import {
   NestInterceptor,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import * as _ from 'lodash';
 import { getClientIp } from 'request-ip';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -30,6 +29,12 @@ export class AuditLogInterceptor implements NestInterceptor {
     private readonly auditLogService: AuditLogService
   ) {}
 
+  private deepValue(obj: Record<string, any>, path: string): any {
+    return path
+      .split('.')
+      .reduce((acc, key) => (acc && key in acc ? acc[key] : undefined), obj);
+  }
+
   private async sendAuditLog(
     options: IAuditLogDecoratorOptions,
     request,
@@ -40,7 +45,7 @@ export class AuditLogInterceptor implements NestInterceptor {
       resource: {
         id:
           options.resource?.id ??
-          _.get(
+          this.deepValue(
             request,
             options.resource_id_field_map ?? DEFAULT_RESOURCE_ID_FIELD_MAP
           ) ??
@@ -54,12 +59,12 @@ export class AuditLogInterceptor implements NestInterceptor {
       },
       actor: {
         id:
-          _.get(
+          this.deepValue(
             request,
             options.actor_id_field_map ?? DEFAULT_ACTOR_ID_FIELD_MAP
           ) ?? DEFAULT_UNKNOWN_VALUE,
         type:
-          _.get(
+          this.deepValue(
             request,
             options.actor_type_field_map ?? DEFAULT_ACTOR_TYPE_FIELD_MAP
           ) ?? DEFAULT_UNKNOWN_VALUE,
