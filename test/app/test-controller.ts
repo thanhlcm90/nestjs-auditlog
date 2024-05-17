@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
   Query,
   Req,
@@ -78,6 +79,21 @@ export class CatsController {
   @Post()
   createTheCat(@Body() body: any): any {
     return `Congratulations! You created the cat ${body.id}!`;
+  }
+
+  @AuditLog({
+    resource: {
+      type: 'Cat',
+    },
+    operation: {
+      id: 'createTheCat',
+      type: 'Create',
+    },
+    resource_id_field_map: 'params.id',
+  })
+  @Post('create/:id')
+  createTheCatByParam(@Param("id") id: string): any {
+    return `Congratulations! You created the cat ${id}!`;
   }
 
   @AuditLog()

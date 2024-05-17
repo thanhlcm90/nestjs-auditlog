@@ -539,6 +539,27 @@ export const createTests = (
     await cleanupNestJSApp();
   });
 
+  test('should send audit log with resource_id_field_map from params', async (t) => {
+    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+      url: '127.0.0.1:4318',
+    });
+    const stub = sinon.stub(exporter, 'sendAuditLog');
+
+    const testingServer = await createNestJSTestingServer({
+      AuditLogModule: AuditLogModule.forRoot({
+        exporter,
+      }),
+    });
+    const { httpServer, url, cleanupNestJSApp } = testingServer;
+    const response = await got.post(`${url}/create/1`);
+
+    t.true(httpServer.listening);
+    t.true(stub.called);
+    t.deepEqual(removeIp(stub.firstCall.args), [auditLog2]);
+    t.is(response.body, 'Congratulations! You created the cat 1!');
+    await cleanupNestJSApp();
+  });
+
   test('should send audit log with default resource_id_field_map', async (t) => {
     const exporter = new OpenTelemetryHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
