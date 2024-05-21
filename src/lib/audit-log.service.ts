@@ -1,15 +1,12 @@
 import { BeforeApplicationShutdown, Inject, Injectable } from '@nestjs/common';
 
-import {
-  IAuditLog,
-  IAuditLogConfigOptions,
-  IAuditLogExporter,
-} from './audit-log.interface';
+import { IAuditLog, IAuditLogConfigOptions } from './audit-log.interface';
 import { AUDIT_LOG_CONFIG_OPTIONS } from './constant';
+import { AuditLogExporter } from './exporters/auditlog.exporter';
 
 @Injectable()
 export class AuditLogService implements BeforeApplicationShutdown {
-  private exporter: IAuditLogExporter;
+  private exporter: AuditLogExporter;
 
   constructor(
     @Inject(AUDIT_LOG_CONFIG_OPTIONS)

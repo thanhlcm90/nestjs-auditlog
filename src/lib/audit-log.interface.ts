@@ -1,4 +1,5 @@
 import { ModuleMetadata } from '@nestjs/common';
+import { AuditLogExporter } from './exporters/auditlog.exporter';
 
 export interface IOtlpExporterConfig {
   headers?: Partial<Record<string, unknown>>;
@@ -18,7 +19,7 @@ export interface IAuditLogResource {
    *
    * EXAMPLE. In an example social website domain, the value can represent post id, comment id, etc. For singleton resources the name can be used as a resource identifier, e.g. "site_settings" for global site settings that you want to audit.
    */
-  id: string;
+  id: string | string[];
 
   /**
    * Type of the resource. This field may be used to distinguish different kinds of resources from each other.
@@ -50,7 +51,7 @@ export interface IAuditLogOperation {
    *  - Serverless function name
    *  - etc.
    */
-  id: string;
+  id: string | string[];
 
   /**
    * Type of the operation. This field may be used to categorize operations / actions / events.
@@ -87,7 +88,7 @@ export interface IAuditLogActor {
    *  - The id may refer to a user (staff, customer, etc) or to a system (service account, etc), depending on the context of the operation.
    *  - This field is required. If, for any reason, there is a case when it is impossible or not desirable to provide actor identity, use a consistent stub value like "unknown".
    */
-  id: string;
+  id: string | string[];
 
   /**
    * Type of the actor. This field may be used to distinguish different kinds of actors from each other.
@@ -128,19 +129,11 @@ export interface IAuditLog {
   actor: IAuditLogActor;
 }
 
-/**
- * The interface of audit log exporter
- */
-export interface IAuditLogExporter {
-  sendAuditLog(log: IAuditLog): Promise<any>;
-  shutdown(): Promise<void>;
-}
-
 export interface IAuditLogConfigOptions {
   /**
    * setup audit log exporter
    */
-  exporter: IAuditLogExporter;
+  exporter: AuditLogExporter;
 }
 
 export interface IAuditLogAsyncConfigOptions

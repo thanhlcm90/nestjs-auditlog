@@ -868,4 +868,43 @@ export const createTests = (
     );
     await cleanupNestJSApp();
   });
+
+  test('should send audit log with id from array string', async (t) => {
+    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+      url: '127.0.0.1:4318',
+    });
+    const stub = sinon.stub(exporter, 'sendAuditLog');
+    stub.onCall(1).callsFake((log) => {
+      return exporter.customLoggerBodyTransformation(log);
+    });
+
+    const testingServer = await createNestJSTestingServer({
+      AuditLogModule: AuditLogModule.forRoot({
+        exporter,
+      }),
+    });
+    const { httpServer, url, cleanupNestJSApp } = testingServer;
+    const response = await got.post(`${url}/array-id`, {
+      json: { id: ['1', '2'] },
+    });
+
+    t.true(httpServer.listening);
+    t.true(stub.called);
+    const stubArgs = stub.firstCall.args;
+    t.deepEqual(removeIp(stubArgs), [
+      {
+        ...auditLog2,
+        resource: {
+          ...auditLog2.resource,
+          id: ['1', '2'],
+        },
+      },
+    ]);
+    t.is(
+      stub(stubArgs[0]),
+      'The actor unknown unknown did the operator Create createTheCat on the resource Cat 1,2'
+    );
+    t.is(response.body, 'Congratulations! You created the cat 1,2!');
+    await cleanupNestJSApp();
+  });
 };

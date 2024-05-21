@@ -303,4 +303,18 @@ export class CatsController {
       role: 'admin',
     };
   }
+
+  @AuditLog({
+    resource: {
+      type: 'Cat',
+    },
+    operation: {
+      id: 'createTheCat',
+      type: 'Create',
+    },
+  })
+  @Post('array-id')
+  createTheCatArrayId(@Body() body: any): any {
+    return `Congratulations! You created the cat ${body.id.join(',')}!`;
+  }
 }
