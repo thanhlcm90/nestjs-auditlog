@@ -19,6 +19,7 @@ import {
   META_AUDIT_LOG,
   OperationStatus,
   REQUEST_HEADER_USER_AGENT,
+  RESPONSE_KEYWORD,
 } from './constant';
 import { IAuditLogDecoratorOptions } from './decorators/audit-log.decorator';
 
@@ -35,9 +36,19 @@ export class AuditLogInterceptor implements NestInterceptor {
       .reduce((acc, key) => (acc && key in acc ? acc[key] : undefined), obj);
   }
 
+  private getFieldMap({ request, response }, fieldId: string) {
+    return this.deepValue(
+      fieldId.startsWith(RESPONSE_KEYWORD) ? response : request,
+      fieldId.startsWith(RESPONSE_KEYWORD)
+        ? fieldId.substring(RESPONSE_KEYWORD.length)
+        : fieldId
+    );
+  }
+
   private async sendAuditLog(
     options: IAuditLogDecoratorOptions,
     request,
+    response,
     status: OperationStatus
   ) {
     const ip = getClientIp(request);
@@ -45,8 +56,8 @@ export class AuditLogInterceptor implements NestInterceptor {
       resource: {
         id:
           options.resource?.id ??
-          this.deepValue(
-            request,
+          this.getFieldMap(
+            { request, response },
             options.resource_id_field_map ?? DEFAULT_RESOURCE_ID_FIELD_MAP
           ) ??
           DEFAULT_UNKNOWN_VALUE,
@@ -59,13 +70,13 @@ export class AuditLogInterceptor implements NestInterceptor {
       },
       actor: {
         id:
-          this.deepValue(
-            request,
+          this.getFieldMap(
+            { request, response },
             options.actor_id_field_map ?? DEFAULT_ACTOR_ID_FIELD_MAP
           ) ?? DEFAULT_UNKNOWN_VALUE,
         type:
-          this.deepValue(
-            request,
+          this.getFieldMap(
+            { request, response },
             options.actor_type_field_map ?? DEFAULT_ACTOR_TYPE_FIELD_MAP
           ) ?? DEFAULT_UNKNOWN_VALUE,
         ip,
@@ -97,18 +108,24 @@ export class AuditLogInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       tap({
-        next: async () => {
+        next: async (response) => {
           if (options) {
             await this.sendAuditLog(
               options,
               request,
+              response,
               OperationStatus.SUCCEEDED
             );
           }
         },
-        error: async () => {
+        error: async (err) => {
           if (options) {
-            await this.sendAuditLog(options, request, OperationStatus.FAILED);
+            await this.sendAuditLog(
+              options,
+              request,
+              err.response,
+              OperationStatus.FAILED
+            );
           }
         },
       })

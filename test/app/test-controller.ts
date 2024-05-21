@@ -92,7 +92,7 @@ export class CatsController {
     resource_id_field_map: 'params.id',
   })
   @Post('create/:id')
-  createTheCatByParam(@Param("id") id: string): any {
+  createTheCatByParam(@Param('id') id: string): any {
     return `Congratulations! You created the cat ${id}!`;
   }
 
@@ -282,5 +282,25 @@ export class CatsController {
   @Post('default/query2')
   createTheCatWithAuditLogQuery2(@Body() body: any): any {
     return `Congratulations! You created the cat ${body.id}!`;
+  }
+
+  @AuditLog({
+    resource: {
+      type: 'Cat',
+    },
+    operation: {
+      id: 'createTheCat',
+      type: 'Create',
+    },
+    resource_id_field_map: '$response.id',
+    actor_id_field_map: '$response.id',
+    actor_type_field_map: '$response.role',
+  })
+  @Post('map-response')
+  createTheCatMapResponse(): any {
+    return {
+      id: '2',
+      role: 'admin',
+    };
   }
 }

@@ -828,4 +828,44 @@ export const createTests = (
     await cleanupNestJSApp();
     t.true(exporterStub.called);
   });
+
+  test('should send audit log with field mapping from response', async (t) => {
+    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+      url: '127.0.0.1:4318',
+    });
+    const stub = sinon.stub(exporter, 'sendAuditLog');
+
+    const testingServer = await createNestJSTestingServer({
+      AuditLogModule: AuditLogModule.forRoot({
+        exporter,
+      }),
+    });
+    const { httpServer, url, cleanupNestJSApp } = testingServer;
+    const response = await got.post(`${url}/map-response`);
+
+    t.true(httpServer.listening);
+    t.true(stub.called);
+    t.deepEqual(removeIp(stub.firstCall.args), [
+      {
+        ...auditLog2,
+        resource: {
+          ...auditLog2.resource,
+          id: '2',
+        },
+        actor: {
+          ...auditLog2.actor,
+          id: '2',
+          type: 'admin',
+        },
+      },
+    ]);
+    t.deepEqual(
+      response.body,
+      JSON.stringify({
+        id: '2',
+        role: 'admin',
+      })
+    );
+    await cleanupNestJSApp();
+  });
 };

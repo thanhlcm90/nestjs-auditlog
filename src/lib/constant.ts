@@ -23,3 +23,5 @@ export enum OperationStatus {
   SUCCEEDED = 'SUCCEEDED',
   FAILED = 'FAILED',
 }
+
+export const RESPONSE_KEYWORD = "$response.";
