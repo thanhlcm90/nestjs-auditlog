@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](https://github.com/thanhlcm90/nestjs-auditlog/compare/v1.1.4...v1.2.0) (2024-05-21)
+
+
+### Features
+
+* field mapping can get from response ([ac62ecd](https://github.com/thanhlcm90/nestjs-auditlog/commit/ac62ecda89c03ea1d2b3328ac060089bda763692))
+* improve auditlog exporter with shutdown event ([06e71cd](https://github.com/thanhlcm90/nestjs-auditlog/commit/06e71cd49e1c6357e648bf387511af01bad774ae))
+* support resource.id with array of string values ([c78e6fa](https://github.com/thanhlcm90/nestjs-auditlog/commit/c78e6faade93625cf0ad6d46b19f919a3fae6bae))
+
 ### [1.1.4](https://github.com/thanhlcm90/nestjs-auditlog/compare/v1.1.0...v1.1.4) (2024-05-16)
 
 
