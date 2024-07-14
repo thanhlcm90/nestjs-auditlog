@@ -14,7 +14,7 @@ import { IAuditLog, IOtlpExporterConfig } from '../audit-log.interface';
 
 import { AuditLogExporter } from './auditlog.exporter';
 
-export class OpenTelemetryHttpExporter extends AuditLogExporter {
+export class APMOpenTelemetryHttpExporter extends AuditLogExporter {
   private loggerProvider: LoggerProvider;
   private loggerOtel: Logger;
 
