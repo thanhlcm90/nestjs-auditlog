@@ -6,11 +6,16 @@ import sinon from 'sinon';
 import {
   AuditLoggerDefaultExporter,
   AuditLogModule,
+  AuditlogOltpGrpcExporter,
+  AuditlogOltpHttpExporter,
   AuditLogService,
-  OpenTelemetryGrpcExporter,
-  OpenTelemetryHttpExporter,
+  TraceModule,
+  TraceOtlpGrpcExporter,
 } from '../src';
-import { DEFAULT_UNKNOWN_VALUE, OperationStatus } from '../src/lib/constant';
+import {
+  DEFAULT_UNKNOWN_VALUE,
+  OperationStatus,
+} from '../src/lib/modules/audit-log/constant';
 
 import { CatsModule } from './app/test-module';
 import { CatsService } from './app/test-service';
@@ -107,14 +112,20 @@ export const createTests = (
   }
 
   test('should work normally after setting up the library (using`.forRoot()`)', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
+    });
+    const traceExporter = new TraceOtlpGrpcExporter('test', 'test', {
+      url: '127.0.0.1:4317',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
+      }),
+      traceModule: TraceModule.forRoot({
+        exporter: traceExporter,
       }),
     });
     const { httpServer, url, cleanupNestJSApp } = testingServer;
@@ -129,19 +140,29 @@ export const createTests = (
   });
 
   test('should work normally after setting up the library (using`.forRootAsync()`)', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRootAsync({
+      auditLogModule: AuditLogModule.forRootAsync({
         imports: [CatsModule],
         inject: [CatsService],
         useFactory: async (_catsService: CatsService) => {
           await delay(1);
           return {
             exporter,
+          };
+        },
+      }),
+      traceModule: TraceModule.forRootAsync({
+        imports: [CatsModule],
+        inject: [CatsService],
+        useFactory: async (_catsService: CatsService) => {
+          await delay(1);
+          return {
+            exporter: null,
           };
         },
       }),
@@ -158,7 +179,7 @@ export const createTests = (
 
   test('should send audit log with empty configuration and default exporter', async (t) => {
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot(),
+      auditLogModule: AuditLogModule.forRoot(),
     });
     const { httpServer, url, cleanupNestJSApp } = testingServer;
     const response = await got(`${url}?id=1`);
@@ -171,7 +192,7 @@ export const createTests = (
   test('should send audit log with empty configuration and default exporter, different logger', async (t) => {
     const logger: Logger = new Logger('Test');
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter: new AuditLoggerDefaultExporter(logger),
       }),
     });
@@ -184,13 +205,13 @@ export const createTests = (
   });
 
   test('should send audit log with empty options case 1 (operation id will be set default is method name)', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });
@@ -205,13 +226,13 @@ export const createTests = (
   });
 
   test('should send audit log with empty options case 2 (operation id will be set default is method name)', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });
@@ -234,13 +255,13 @@ export const createTests = (
   });
 
   test('should send audit log with empty options (all unknown values)', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });
@@ -263,13 +284,13 @@ export const createTests = (
   });
 
   test('should send audit log with @AuditLogCreate (case 1)', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });
@@ -295,13 +316,13 @@ export const createTests = (
   });
 
   test('should send audit log with @AuditLogCreate (case 2)', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });
@@ -327,13 +348,13 @@ export const createTests = (
   });
 
   test('should send audit log with @AuditLogUpdate (case 1)', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });
@@ -359,13 +380,13 @@ export const createTests = (
   });
 
   test('should send audit log with @AuditLogUpdate (case 2)', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });
@@ -391,13 +412,13 @@ export const createTests = (
   });
 
   test('should send audit log with @AuditLogRemove (case 1)', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });
@@ -423,13 +444,13 @@ export const createTests = (
   });
 
   test('should send audit log with @AuditLogRemove (case 2)', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });
@@ -455,13 +476,13 @@ export const createTests = (
   });
 
   test('should send audit log with @AuditLogQuery (case 1)', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });
@@ -487,13 +508,13 @@ export const createTests = (
   });
 
   test('should send audit log with @AuditLogQuery (case 2)', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });
@@ -519,13 +540,13 @@ export const createTests = (
   });
 
   test('should send audit log with resource_id_field_map from body', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });
@@ -540,13 +561,13 @@ export const createTests = (
   });
 
   test('should send audit log with resource_id_field_map from params', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });
@@ -561,13 +582,13 @@ export const createTests = (
   });
 
   test('should send audit log with default resource_id_field_map', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });
@@ -582,13 +603,13 @@ export const createTests = (
   });
 
   test('should send audit log with fixed resource_id', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });
@@ -603,13 +624,13 @@ export const createTests = (
   });
 
   test('should send audit log with resource_id is unknow', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });
@@ -632,13 +653,13 @@ export const createTests = (
   });
 
   test('should send audit log with actor from body', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });
@@ -655,13 +676,13 @@ export const createTests = (
   });
 
   test('should send audit log with actor from guard', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });
@@ -678,13 +699,13 @@ export const createTests = (
   });
 
   test('should send audit log by using AuditLogService', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });
@@ -701,13 +722,13 @@ export const createTests = (
   });
 
   test('should send audit log with grpc exporter', async (t) => {
-    const exporter = new OpenTelemetryGrpcExporter('test', 'test', {
+    const exporter = new AuditlogOltpGrpcExporter('test', 'test', {
       url: '127.0.0.1:4317',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({ exporter: exporter }),
+      auditLogModule: AuditLogModule.forRoot({ exporter: exporter }),
     });
     const { httpServer, url, cleanupNestJSApp } = testingServer;
     const response = await got(`${url}?id=1`);
@@ -724,7 +745,7 @@ export const createTests = (
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({ exporter: exporter }),
+      auditLogModule: AuditLogModule.forRoot({ exporter: exporter }),
     });
     const { httpServer, url, cleanupNestJSApp } = testingServer;
     const response = await got(`${url}/no-audit?id=1`);
@@ -740,7 +761,7 @@ export const createTests = (
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({ exporter: exporter }),
+      auditLogModule: AuditLogModule.forRoot({ exporter: exporter }),
     });
     const { httpServer, url, cleanupNestJSApp } = testingServer;
     const response = got(`${url}/failed?id=1`);
@@ -757,7 +778,7 @@ export const createTests = (
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({ exporter: exporter }),
+      auditLogModule: AuditLogModule.forRoot({ exporter: exporter }),
     });
     const { httpServer, url, cleanupNestJSApp } = testingServer;
     const response = got(`${url}/failed-no-audit?id=1`);
@@ -769,13 +790,13 @@ export const createTests = (
   });
 
   test('should send audit log by using AuditLogService with fixed resource_id', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const exporterStub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });
@@ -790,13 +811,13 @@ export const createTests = (
   });
 
   test('should send audit log with real opentelemetry grpc exporter', async (t) => {
-    const exporter = new OpenTelemetryGrpcExporter('test', 'test', {
+    const exporter = new AuditlogOltpGrpcExporter('test', 'test', {
       url: '127.0.0.1:4317',
     });
     const exporterStub = sinon.stub(exporter, 'shutdown');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });
@@ -810,13 +831,13 @@ export const createTests = (
   });
 
   test('should send audit log with real opentelemetry http exporter', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const exporterStub = sinon.stub(exporter, 'shutdown');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });
@@ -830,13 +851,13 @@ export const createTests = (
   });
 
   test('should send audit log with field mapping from response', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });
@@ -870,7 +891,7 @@ export const createTests = (
   });
 
   test('should send audit log with id from array string', async (t) => {
-    const exporter = new OpenTelemetryHttpExporter('test', 'test', {
+    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
       url: '127.0.0.1:4318',
     });
     const stub = sinon.stub(exporter, 'sendAuditLog');
@@ -879,7 +900,7 @@ export const createTests = (
     });
 
     const testingServer = await createNestJSTestingServer({
-      AuditLogModule: AuditLogModule.forRoot({
+      auditLogModule: AuditLogModule.forRoot({
         exporter,
       }),
     });

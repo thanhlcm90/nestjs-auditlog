@@ -11,7 +11,7 @@ export class AuditLoggerDefaultExporter extends AuditLogExporter {
   private _logger: Logger = new Logger(AuditLoggerDefaultExporter.name);
 
   constructor(logger?: Logger) {
-    super();
+    super('', '', null);
     if (logger) {
       this._logger = logger;
     }
@@ -19,7 +19,7 @@ export class AuditLoggerDefaultExporter extends AuditLogExporter {
 
   async shutdown() {}
 
-  async sendAuditLog(log: IAuditLog) {
+  override async sendAuditLog(log: IAuditLog) {
     this._logger.log(this.customLoggerBodyTransformation(log));
   }
 }

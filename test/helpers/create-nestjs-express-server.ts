@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 
+import { TraceModule, TraceOtlpHttpExporter } from '../../src';
 import { CatsModule } from '../app/test-module';
 
 import { createAppModule } from './create-app-module';
@@ -8,9 +9,18 @@ import type { NestJSTestingServerFactory } from './types';
 export const createNestJSExpressServer: NestJSTestingServerFactory = async (
   params
 ) => {
-  const { AuditLogModule } = params;
+  let { auditLogModule, traceModule } = params;
+  const traceExporter = new TraceOtlpHttpExporter('test', 'test', {
+    url: '127.0.0.1:4318',
+  });
+
+  if (!traceModule) {
+    traceModule = TraceModule.forRoot({
+      exporter: traceExporter,
+    });
+  }
   const AppModule = createAppModule({
-    imports: [AuditLogModule, CatsModule],
+    imports: [auditLogModule, traceModule, CatsModule],
   });
 
   const app = await NestFactory.create(AppModule, { logger: false });

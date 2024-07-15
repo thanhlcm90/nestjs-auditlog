@@ -1,3 +1,3 @@
-export * from './opentelemetry-http.exporter';
-export * from './opentelemetry-grpc.exporter';
+export * from './auditlog.otlphttp.exporter';
+export * from './auditlog.otlpgrpc.exporter';
 export * from './auditlog.default.exporter';

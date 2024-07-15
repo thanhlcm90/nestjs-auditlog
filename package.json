@@ -88,13 +88,17 @@
     "@nestjs/common": "*"
   },
   "dependencies": {
-    "@opentelemetry/api": "^1.8.0",
-    "@opentelemetry/api-logs": "^0.51.1",
-    "@opentelemetry/exporter-logs-otlp-grpc": "^0.51.1",
-    "@opentelemetry/exporter-logs-otlp-http": "^0.51.1",
-    "@opentelemetry/resources": "^1.24.1",
-    "@opentelemetry/sdk-node": "^0.51.1",
-    "@opentelemetry/semantic-conventions": "^1.24.1",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/api-logs": "^0.52.1",
+    "@opentelemetry/auto-instrumentations-node": "^0.48.0",
+    "@opentelemetry/exporter-logs-otlp-grpc": "^0.52.1",
+    "@opentelemetry/exporter-logs-otlp-http": "^0.52.1",
+    "@opentelemetry/exporter-trace-otlp-grpc": "^0.52.1",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.52.1",
+    "@opentelemetry/otlp-exporter-base": "^0.52.1",
+    "@opentelemetry/resources": "^1.25.1",
+    "@opentelemetry/sdk-node": "^0.52.1",
+    "@opentelemetry/semantic-conventions": "^1.25.1",
     "request-ip": "^3.3.0"
   },
   "files": [

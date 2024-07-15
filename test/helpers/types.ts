@@ -9,7 +9,8 @@ type TestingServerType = {
 };
 
 type NestJSTestingServerFactoryParams = {
-  AuditLogModule: DynamicModule;
+  auditLogModule: DynamicModule;
+  traceModule?: DynamicModule;
 };
 
 export type NestJSTestingServerFactory = (

@@ -18,7 +18,7 @@ import {
   AuditLogService,
   AuditLogUpdate,
 } from '../../src';
-import { OperationStatus } from '../../src/lib/constant';
+import { OperationStatus } from '../../src/lib/modules/audit-log/constant';
 
 import { TestGuard } from './test.guard';
 
