@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.4.0](https://github.com/thanhlcm90/nestjs-auditlog/compare/v1.2.0...v1.4.0) (2024-07-15)
+
+
+### Features
+
+* add APM trace ([bf40d38](https://github.com/thanhlcm90/nestjs-auditlog/commit/bf40d38e8ddcfdaec2dbc7245fa75c7f2e72fd10))
+
 ## [1.2.0](https://github.com/thanhlcm90/nestjs-auditlog/compare/v1.1.4...v1.2.0) (2024-05-21)
 
 
