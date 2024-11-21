@@ -9,6 +9,8 @@ import { TestController } from './test.controller';
   imports: [
     AuditLogModule.forRoot({
       exporter: new AuditlogClickHouseExporter({
+        serviceName: 'test',
+        databaseName: 'test_auditlog',
         clickHouseUrl: 'http://10.11.4.182:8123',
       }),
     }),

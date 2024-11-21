@@ -11,6 +11,8 @@ import {
 import {
   AuditLog,
   AuditLogCreate,
+  AuditLogDataDiff,
+  AuditLogDataDiffCallback,
   AuditLogQuery,
   AuditLogRemove,
   AuditLogUpdate,
@@ -273,5 +275,31 @@ export class TestController {
   @Post('array-id')
   createTheCatArrayId(@Body() body: any): any {
     return `Congratulations! You created the cat ${body.id.join(',')}!`;
+  }
+
+  @AuditLog({
+    resource: {
+      type: 'Cat',
+    },
+    operation: {
+      id: 'createTheCat',
+      type: 'Create',
+    },
+    actor_id_field_map: 'body.username',
+    actor_type_field_map: 'body.role',
+  })
+  @Get('compare-data')
+  async createTheCatWithCompareData(
+    @AuditLogDataDiff() dataDiff: AuditLogDataDiffCallback
+  ) {
+    dataDiff(
+      {
+        name: 'test1',
+      },
+      {
+        name: 'test2',
+      }
+    );
+    return `Congratulations! You created the cat!`;
   }
 }

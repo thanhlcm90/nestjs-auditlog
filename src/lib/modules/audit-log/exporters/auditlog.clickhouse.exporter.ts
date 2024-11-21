@@ -74,38 +74,36 @@ SETTINGS index_granularity = 8192
   }
 
   async sendAuditLog(log: IAuditLog) {
-    const values = [
-      {
-        service_name: this.options.serviceName,
-        service_namespace: this.options.serviceNamespace ?? '',
-        service_env: this.options.serviceEnvironmentName ?? '',
-        resource_id: log.resource.id ?? '',
-        resource_type: log.resource.type ?? '',
-        resource_data_before: log.data_diff?.before
-          ? JSON.stringify(log.data_diff?.before)
-          : '',
-        resource_data_after: log.data_diff?.after
-          ? JSON.stringify(log.data_diff?.after)
-          : '',
-        resource_data_diff: log.data_diff?.diff
-          ? JSON.stringify(log.data_diff?.diff)
-          : '',
-        operation_id: log.operation.id ?? '',
-        operation_type: log.operation.type ?? '',
-        operation_status: log.operation.status ?? '',
-        actor_id: log.actor.id ?? '',
-        actor_type: log.actor.type ?? '',
-        actor_ip: log.actor.ip ?? '',
-        actor_agent: log.actor.agent ?? '',
-        message: this.customLoggerBodyTransformation(log),
-        created_at: Date.now(),
-      },
-    ];
-    await this.client.insert({
-      table: this.auditLogTableName,
-      values: values,
-      format: 'JSONEachRow',
-    });
+    try {
+      const values = [
+        {
+          service_name: this.options.serviceName,
+          service_namespace: this.options.serviceNamespace,
+          service_env: this.options.serviceEnvironmentName,
+          resource_id: log.resource.id,
+          resource_type: log.resource.type,
+          resource_data_before: JSON.stringify(log.data_diff?.before),
+          resource_data_after: JSON.stringify(log.data_diff?.after),
+          resource_data_diff: JSON.stringify(log.data_diff?.diff),
+          operation_id: log.operation.id,
+          operation_type: log.operation.type,
+          operation_status: log.operation.status,
+          actor_id: log.actor.id,
+          actor_type: log.actor.type,
+          actor_ip: log.actor.ip,
+          actor_agent: log.actor.agent,
+          message: this.customLoggerBodyTransformation(log),
+          created_at: this.formatDateToUTC(new Date()),
+        },
+      ];
+      await this.client.insert({
+        table: this.auditLogTableName,
+        values: values,
+        format: 'JSONEachRow',
+      });
+    } catch (ex) {
+      console.error(ex);
+    }
   }
 
   /**
@@ -120,5 +118,20 @@ SETTINGS index_granularity = 8192
       : log.resource.id;
 
     return `The actor ${log.actor.type} ${log.actor.id} did the operator ${log.operation.type} ${log.operation.id} on the resource ${log.resource.type} ${resourceId}`;
+  }
+
+  private padTo2Digits(num: number): string {
+    return num.toString().padStart(2, '0');
+  }
+
+  private formatDateToUTC(date: Date): string {
+    const year = date.getUTCFullYear();
+    const month = this.padTo2Digits(date.getUTCMonth() + 1); // Months are zero-based
+    const day = this.padTo2Digits(date.getUTCDate());
+    const hours = this.padTo2Digits(date.getUTCHours());
+    const minutes = this.padTo2Digits(date.getUTCMinutes());
+    const seconds = this.padTo2Digits(date.getUTCSeconds());
+
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
   }
 }
