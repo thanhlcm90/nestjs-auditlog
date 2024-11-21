@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.5.0](https://github.com/thanhlcm90/nestjs-auditlog/compare/v1.4.0...v1.5.0) (2024-11-21)
+
+
+### Features
+
+* add new exporter to push log into ClickHouse ([61f75cb](https://github.com/thanhlcm90/nestjs-auditlog/commit/61f75cbd62ec45cef60e9f7aaa92d242228b17d8))
+
 ## [1.4.0](https://github.com/thanhlcm90/nestjs-auditlog/compare/v1.2.0...v1.4.0) (2024-07-15)
 
 
