@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 
 import { TraceModule, TraceOtlpHttpExporter } from '../../src';
-import { CatsModule } from '../app/test-module';
+import { TestModule } from '../app/test-module';
 
 import { createAppModule } from './create-app-module';
 import type { NestJSTestingServerFactory } from './types';
@@ -20,7 +20,7 @@ export const createNestJSExpressServer: NestJSTestingServerFactory = async (
     });
   }
   const AppModule = createAppModule({
-    imports: [auditLogModule, traceModule, CatsModule],
+    imports: [auditLogModule, traceModule, TestModule],
   });
 
   const app = await NestFactory.create(AppModule, { logger: false });

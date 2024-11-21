@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
-export class CatsService {
+export class TestService {
   public readonly age = 10_000;
 }

@@ -1,6 +1,6 @@
 import { Logger } from '@nestjs/common';
 
-import { IAuditLog } from '../audit-log.interface';
+import { IAuditLog, IAuditLogExporter } from '../audit-log.interface';
 
 import { AuditLogExporter } from './auditlog.exporter';
 
@@ -8,13 +8,19 @@ import { AuditLogExporter } from './auditlog.exporter';
  * The default exporter for Zero configuration, that print auditlog to `stdout` by using default NestJS `Logger`
  */
 export class AuditLoggerDefaultExporter extends AuditLogExporter {
-  private _logger: Logger = new Logger(AuditLoggerDefaultExporter.name);
+  private readonly _logger: Logger = new Logger(
+    AuditLoggerDefaultExporter.name
+  );
 
   constructor(logger?: Logger) {
-    super('', '', null);
+    super({ serviceName: '', serviceNamespace: '', exporter: null });
     if (logger) {
       this._logger = logger;
     }
+  }
+
+  clone(): IAuditLogExporter {
+    return new AuditLoggerDefaultExporter(this._logger);
   }
 
   async shutdown() {}

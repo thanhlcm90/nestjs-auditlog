@@ -6,25 +6,19 @@ import {
   Param,
   Post,
   Query,
-  Req,
 } from '@nestjs/common';
-import { UseGuards } from '@nestjs/common';
 
 import {
   AuditLog,
   AuditLogCreate,
   AuditLogQuery,
   AuditLogRemove,
-  AuditLogService,
   AuditLogUpdate,
 } from '../../src';
-import { OperationStatus } from '../../src/lib/modules/audit-log/constant';
-
-import { TestGuard } from './test.guard';
 
 @Controller('/')
 export class TestController {
-  constructor(private readonly auditLogService: AuditLogService) {}
+  constructor() {}
 
   @AuditLog({
     resource: {
@@ -180,43 +174,6 @@ export class TestController {
   })
   @Post('actor/actor_id_field_map')
   createCatWithActor(@Body() body: any): any {
-    return `Congratulations! You created the cat ${body.id}!`;
-  }
-
-  @AuditLog({
-    resource: {
-      type: 'Cat',
-    },
-    operation: {
-      id: 'createTheCat',
-      type: 'Create',
-    },
-  })
-  @UseGuards(TestGuard)
-  @Post('actor/guard')
-  createCatWithGuard(@Body() body: any): any {
-    return `Congratulations! You created the cat ${body.id}!`;
-  }
-
-  @UseGuards(TestGuard)
-  @Post('audit-with-service')
-  async createCatWithService(@Body() body: any, @Req() req: any) {
-    await this.auditLogService.sendAuditLog({
-      resource: {
-        id: body.id,
-        type: 'Cat',
-      },
-      operation: {
-        id: 'createTheCat',
-        type: 'Create',
-        status: OperationStatus.SUCCEEDED,
-      },
-      actor: {
-        id: req.user.id,
-        type: req.user.role,
-        agent: 'got (https://github.com/sindresorhus/got)',
-      },
-    });
     return `Congratulations! You created the cat ${body.id}!`;
   }
 

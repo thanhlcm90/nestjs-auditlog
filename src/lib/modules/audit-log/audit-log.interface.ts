@@ -1,6 +1,6 @@
+import { ClickHouseClient } from '@clickhouse/client';
 import { ModuleMetadata } from '@nestjs/common';
-
-import { AuditLogExporter } from './exporters/auditlog.exporter';
+import { LogRecordExporter } from '@opentelemetry/sdk-logs';
 
 export interface IAuditLogResource {
   /**
@@ -124,7 +124,7 @@ export interface IAuditLogConfigOptions {
   /**
    * setup audit log exporter
    */
-  exporter: AuditLogExporter;
+  exporter: IAuditLogExporter;
 }
 
 export interface IAuditLogAsyncConfigOptions
@@ -133,4 +133,51 @@ export interface IAuditLogAsyncConfigOptions
     ...args: any[]
   ) => IAuditLogConfigOptions | Promise<IAuditLogConfigOptions>;
   inject?: any[];
+}
+
+export interface IAuditLogExporter {
+  startup(): Promise<void>;
+  shutdown(): Promise<void>;
+  sendAuditLog(log: IAuditLog): Promise<void>;
+  customLoggerBodyTransformation(log: IAuditLog): string;
+  clone(): IAuditLogExporter;
+}
+
+export interface IAuditLogClickHouseExporterOption {
+  /**
+   * ClickHouse DB url, default "http://localhost:8123"
+   */
+  clickHouseUrl?: string;
+
+  /**
+   * set this value will ignore the clickHouseUrl
+   */
+  clickHouseClient?: ClickHouseClient;
+
+  /**
+   * log database name, default "test_auditlog"
+   */
+  databaseName?: string;
+
+  /**
+   * log data expired in day, default is 180 days
+   */
+  logExpired?: number; // in second
+}
+
+export interface IAuditLogExporterOptions {
+  serviceName: string;
+  serviceNamespace: string;
+  exporter?: LogRecordExporter;
+  serviceEnvironmentName?: string;
+}
+
+export interface IExporterConfig {
+  headers?: Partial<Record<string, unknown>>;
+  hostname?: string;
+  url?: string;
+  concurrencyLimit?: number;
+  /** Maximum time the OTLP exporter will wait for each batch export.
+   * The default value is 10000ms. */
+  timeoutMillis?: number;
 }

@@ -1,3 +1,3 @@
-export * from './trace.exporter'
-export * from './trace.oltphttp.exporter'
-export * from './trace.otlpgrpc.exporter'
+export * from './trace.exporter';
+export * from './trace.otlphttp.exporter';
+export * from './trace.otlpgrpc.exporter';

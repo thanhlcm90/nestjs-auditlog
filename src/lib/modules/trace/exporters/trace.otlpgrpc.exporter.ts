@@ -1,6 +1,6 @@
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
 
-import { IExporterConfig } from '../../../interfaces/exporter.config.interface';
+import { IExporterConfig } from '../../audit-log';
 
 import { TraceExporter } from './trace.exporter';
 

@@ -1,14 +1,12 @@
-import { Logger } from '@nestjs/common';
-import test from 'ava';
+import test, { ExecutionContext } from 'ava';
 import safeGot from 'got';
 import sinon from 'sinon';
 
 import {
   AuditLoggerDefaultExporter,
   AuditLogModule,
-  AuditlogOltpGrpcExporter,
-  AuditlogOltpHttpExporter,
   AuditLogService,
+  IAuditLogExporter,
   TraceModule,
   TraceOtlpGrpcExporter,
 } from '../src';
@@ -17,8 +15,8 @@ import {
   OperationStatus,
 } from '../src/lib/modules/audit-log/constant';
 
-import { CatsModule } from './app/test-module';
-import { CatsService } from './app/test-service';
+import { TestModule } from './app/test-module';
+import { TestService } from './app/test-service';
 import type { NestJSTestingServerFactory } from './helpers/types';
 
 const got = safeGot.extend({
@@ -31,7 +29,10 @@ const delay = (second) =>
   new Promise((resolve) => setTimeout(resolve, second * 1000));
 
 export const createTests = (
-  createNestJSTestingServer: NestJSTestingServerFactory
+  createNestJSTestingServer: NestJSTestingServerFactory,
+  rootTitle: string,
+  auditLogExporter?: IAuditLogExporter,
+  additionalExpect?: (t: ExecutionContext) => void
 ): void => {
   const auditLogDefault = {
     resource: { id: '1', type: DEFAULT_UNKNOWN_VALUE },
@@ -111,10 +112,8 @@ export const createTests = (
     });
   }
 
-  test('should work normally after setting up the library (using`.forRoot()`)', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should work normally after setting up the library (using".forRoot()")`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const traceExporter = new TraceOtlpGrpcExporter('test', 'test', {
       url: '127.0.0.1:4317',
     });
@@ -139,17 +138,15 @@ export const createTests = (
     await cleanupNestJSApp();
   });
 
-  test('should work normally after setting up the library (using`.forRootAsync()`)', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should work normally after setting up the library (using".forRootAsync()")`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
       auditLogModule: AuditLogModule.forRootAsync({
-        imports: [CatsModule],
-        inject: [CatsService],
-        useFactory: async (_catsService: CatsService) => {
+        imports: [TestModule],
+        inject: [TestService],
+        useFactory: async (_catsService: TestService) => {
           await delay(1);
           return {
             exporter,
@@ -157,9 +154,9 @@ export const createTests = (
         },
       }),
       traceModule: TraceModule.forRootAsync({
-        imports: [CatsModule],
-        inject: [CatsService],
-        useFactory: async (_catsService: CatsService) => {
+        imports: [TestModule],
+        inject: [TestService],
+        useFactory: async (_catsService: TestService) => {
           await delay(1);
           return {
             exporter: null,
@@ -177,37 +174,22 @@ export const createTests = (
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with empty configuration and default exporter', async (t) => {
+  test(`${rootTitle} - should send audit log with empty configuration`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const testingServer = await createNestJSTestingServer({
-      auditLogModule: AuditLogModule.forRoot(),
+      auditLogModule: AuditLogModule.forRoot({ exporter }),
     });
     const { httpServer, url, cleanupNestJSApp } = testingServer;
     const response = await got(`${url}?id=1`);
 
     t.true(httpServer.listening);
     t.is(response.body, 'Congratulations! You have found the cat 1!');
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with empty configuration and default exporter, different logger', async (t) => {
-    const logger: Logger = new Logger('Test');
-    const testingServer = await createNestJSTestingServer({
-      auditLogModule: AuditLogModule.forRoot({
-        exporter: new AuditLoggerDefaultExporter(logger),
-      }),
-    });
-    const { httpServer, url, cleanupNestJSApp } = testingServer;
-    const response = await got(`${url}?id=1`);
-
-    t.true(httpServer.listening);
-    t.is(response.body, 'Congratulations! You have found the cat 1!');
-    await cleanupNestJSApp();
-  });
-
-  test('should send audit log with empty options case 1 (operation id will be set default is method name)', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should send audit log with empty options case 1 (operation id will be set default is method name)`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
@@ -222,13 +204,12 @@ export const createTests = (
     t.true(stub.called);
     t.deepEqual(removeIp(stub.firstCall.args), [auditLogDefault]);
     t.is(response.body, 'Congratulations! You created the cat 1!');
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with empty options case 2 (operation id will be set default is method name)', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should send audit log with empty options case 2 (operation id will be set default is method name)`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
@@ -251,13 +232,12 @@ export const createTests = (
       },
     ]);
     t.is(response.body, 'Congratulations! You created the cat 1!');
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with empty options (all unknown values)', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should send audit log with empty options (all unknown values)`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
@@ -280,13 +260,12 @@ export const createTests = (
       },
     ]);
     t.is(response.body, 'Congratulations! You created the cat 1!');
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with @AuditLogCreate (case 1)', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should send audit log with @AuditLogCreate (case 1)`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
@@ -312,13 +291,12 @@ export const createTests = (
       },
     ]);
     t.is(response.body, 'Congratulations! You created the cat 1!');
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with @AuditLogCreate (case 2)', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should send audit log with @AuditLogCreate (case 2)`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
@@ -344,13 +322,12 @@ export const createTests = (
       },
     ]);
     t.is(response.body, 'Congratulations! You created the cat 1!');
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with @AuditLogUpdate (case 1)', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should send audit log with @AuditLogUpdate (case 1)`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
@@ -376,13 +353,12 @@ export const createTests = (
       },
     ]);
     t.is(response.body, 'Congratulations! You created the cat 1!');
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with @AuditLogUpdate (case 2)', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should send audit log with @AuditLogUpdate (case 2)`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
@@ -408,13 +384,12 @@ export const createTests = (
       },
     ]);
     t.is(response.body, 'Congratulations! You created the cat 1!');
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with @AuditLogRemove (case 1)', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should send audit log with @AuditLogRemove (case 1)`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
@@ -440,13 +415,12 @@ export const createTests = (
       },
     ]);
     t.is(response.body, 'Congratulations! You created the cat 1!');
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with @AuditLogRemove (case 2)', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should send audit log with @AuditLogRemove (case 2)`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
@@ -472,13 +446,12 @@ export const createTests = (
       },
     ]);
     t.is(response.body, 'Congratulations! You created the cat 1!');
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with @AuditLogQuery (case 1)', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should send audit log with @AuditLogQuery (case 1)`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
@@ -504,13 +477,12 @@ export const createTests = (
       },
     ]);
     t.is(response.body, 'Congratulations! You created the cat 1!');
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with @AuditLogQuery (case 2)', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should send audit log with @AuditLogQuery (case 2)`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
@@ -536,13 +508,12 @@ export const createTests = (
       },
     ]);
     t.is(response.body, 'Congratulations! You created the cat 1!');
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with resource_id_field_map from body', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should send audit log with resource_id_field_map from body`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
@@ -560,10 +531,8 @@ export const createTests = (
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with resource_id_field_map from params', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should send audit log with resource_id_field_map from params`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
@@ -578,13 +547,12 @@ export const createTests = (
     t.true(stub.called);
     t.deepEqual(removeIp(stub.firstCall.args), [auditLog2]);
     t.is(response.body, 'Congratulations! You created the cat 1!');
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with default resource_id_field_map', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should send audit log with default resource_id_field_map`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
@@ -599,13 +567,12 @@ export const createTests = (
     t.true(stub.called);
     t.deepEqual(removeIp(stub.firstCall.args), [auditLog2]);
     t.is(response.body, 'Congratulations! You created the cat 1!');
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with fixed resource_id', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should send audit log with fixed resource_id`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
@@ -620,13 +587,12 @@ export const createTests = (
     t.true(stub.called);
     t.deepEqual(removeIp(stub.firstCall.args), [auditLog2]);
     t.is(response.body, 'Congratulations! You created the cat 1!');
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with resource_id is unknow', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should send audit log with resource_id is unknow`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
@@ -649,13 +615,12 @@ export const createTests = (
       },
     ]);
     t.is(response.body, 'Congratulations! You created the cat unknown!');
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with actor from body', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should send audit log with actor from body`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
@@ -672,13 +637,12 @@ export const createTests = (
     t.true(stub.called);
     t.deepEqual(removeIp(stub.firstCall.args), [auditLog4]);
     t.is(response.body, 'Congratulations! You created the cat 1!');
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with actor from guard', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should send audit log with actor from guard`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
@@ -695,13 +659,12 @@ export const createTests = (
     t.true(stub.called);
     t.deepEqual(removeIp(stub.firstCall.args), [auditLog4]);
     t.is(response.body, 'Congratulations! You created the cat 1!');
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should send audit log by using AuditLogService', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should send audit log by using AuditLogService`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
@@ -718,13 +681,12 @@ export const createTests = (
     t.true(stub.called);
     t.deepEqual(removeIp(stub.firstCall.args), [auditLog4]);
     t.is(response.body, 'Congratulations! You created the cat 1!');
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with grpc exporter', async (t) => {
-    const exporter = new AuditlogOltpGrpcExporter('test', 'test', {
-      url: '127.0.0.1:4317',
-    });
+  test(`${rootTitle} - should send audit log with grpc exporter`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
@@ -737,10 +699,11 @@ export const createTests = (
     t.true(stub.called);
     t.deepEqual(removeIp(stub.firstCall.args), [auditLog1]);
     t.is(response.body, 'Congratulations! You have found the cat 1!');
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should NOT send audit log without decorator', async (t) => {
+  test(`${rootTitle} - should NOT send audit log without decorator`, async (t) => {
     const exporter = new AuditLoggerDefaultExporter();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
@@ -753,10 +716,11 @@ export const createTests = (
     t.true(httpServer.listening);
     t.false(stub.called);
     t.is(response.body, 'Congratulations! You have found the cat 1!');
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with FAILED status', async (t) => {
+  test(`${rootTitle} - should send audit log with FAILED status`, async (t) => {
     const exporter = new AuditLoggerDefaultExporter();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
@@ -770,10 +734,11 @@ export const createTests = (
     await t.throwsAsync(response);
     t.true(stub.called);
     t.deepEqual(removeIp(stub.firstCall.args), [auditLog3]);
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should NOT send audit log with FAILED status', async (t) => {
+  test(`${rootTitle} - should NOT send audit log with FAILED status`, async (t) => {
     const exporter = new AuditLoggerDefaultExporter();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
@@ -786,13 +751,12 @@ export const createTests = (
     t.true(httpServer.listening);
     await t.throwsAsync(response);
     t.false(stub.called);
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should send audit log by using AuditLogService with fixed resource_id', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should send audit log by using AuditLogService with fixed resource_id`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const exporterStub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
@@ -807,13 +771,12 @@ export const createTests = (
     t.true(httpServer.listening);
     t.true(exporterStub.called);
     t.deepEqual(exporterStub.firstCall.args, [auditLog4]);
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with real opentelemetry grpc exporter', async (t) => {
-    const exporter = new AuditlogOltpGrpcExporter('test', 'test', {
-      url: '127.0.0.1:4317',
-    });
+  test(`${rootTitle} - should send audit log with real opentelemetry grpc exporter`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const exporterStub = sinon.stub(exporter, 'shutdown');
 
     const testingServer = await createNestJSTestingServer({
@@ -827,13 +790,12 @@ export const createTests = (
     t.true(httpServer.listening);
     t.is(response.body, 'Congratulations! You created the cat 1!');
     await cleanupNestJSApp();
+    additionalExpect?.(t);
     t.true(exporterStub.called);
   });
 
-  test('should send audit log with real opentelemetry http exporter', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should send audit log with real opentelemetry http exporter`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const exporterStub = sinon.stub(exporter, 'shutdown');
 
     const testingServer = await createNestJSTestingServer({
@@ -847,13 +809,12 @@ export const createTests = (
     t.true(httpServer.listening);
     t.is(response.body, 'Congratulations! You created the cat 1!');
     await cleanupNestJSApp();
+    additionalExpect?.(t);
     t.true(exporterStub.called);
   });
 
-  test('should send audit log with field mapping from response', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should send audit log with field mapping from response`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
@@ -887,13 +848,12 @@ export const createTests = (
         role: 'admin',
       })
     );
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 
-  test('should send audit log with id from array string', async (t) => {
-    const exporter = new AuditlogOltpHttpExporter('test', 'test', {
-      url: '127.0.0.1:4318',
-    });
+  test(`${rootTitle} - should send audit log with id from array string`, async (t) => {
+    const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
     stub.onCall(1).callsFake((log) => {
       return exporter.customLoggerBodyTransformation(log);
@@ -926,6 +886,7 @@ export const createTests = (
       'The actor unknown unknown did the operator Create createTheCat on the resource Cat 1,2'
     );
     t.is(response.body, 'Congratulations! You created the cat 1,2!');
+    additionalExpect?.(t);
     await cleanupNestJSApp();
   });
 };

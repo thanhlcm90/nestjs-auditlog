@@ -24,7 +24,7 @@ export interface IAuditLogDecoratorOptions {
   actor?: Partial<IAuditLogActor>;
 
   /**
-   * field mapping from request to get resource.id. If you want to mapping from response, put the $response keyword at the beginning. Example: $response.data.id 
+   * field mapping from request to get resource.id. If you want to mapping from response, put the $response keyword at the beginning. Example: $response.data.id
    * default: body.id
    */
   resource_id_field_map?: string;

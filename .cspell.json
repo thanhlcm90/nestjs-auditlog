@@ -31,8 +31,15 @@
     "opentelemetry",
     "grpc",
     "otlp",
+    "Oltp",
+    "OLTP",
     "SEMRESATTRS",
-    "otel"
+    "otel",
+    "otlphttp",
+    "otlpgrpc",
+    "clickhouse",
+    "Unknow",
+    "Millis"
   ],
   "flagWords": [],
   "ignorePaths": [
