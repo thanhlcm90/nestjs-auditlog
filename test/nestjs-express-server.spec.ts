@@ -43,17 +43,37 @@ const clickHouseClient = createClient({
     async_insert: 1,
   },
 });
-const query = sinon.stub(clickHouseClient, 'query');
-const insert = sinon.stub(clickHouseClient, 'insert');
+const query1 = sinon.stub(clickHouseClient, 'query');
+const insert1 = sinon.stub(clickHouseClient, 'insert');
 createTests(
   createNestJSExpressServer,
-  'ClickHouse Exporter',
+  'ClickHouse Exporter 1',
   new AuditlogClickHouseExporter({
     serviceName: 'test',
     clickHouseClient,
   }),
   (t) => {
-    t.true(query.called);
-    t.true(insert.called);
+    t.true(query1.called);
+    t.true(insert1.called);
   }
+);
+
+const clickHouseExporter = new AuditlogClickHouseExporter({
+  serviceName: 'test',
+  serviceNamespace: 'test-dev',
+  serviceEnvironmentName: 'dev',
+  clickHouseUrl: 'http://localhost:8123',
+  databaseName: 'test_auditlog',
+  logExpired: 180,
+});
+const b = clickHouseExporter.clone();
+sinon.stub(clickHouseExporter, 'clone').callsFake(() => {
+  const a = b.clone();
+  sinon.stub(a, 'createClickhouseClient');
+  return a;
+});
+createTests(
+  createNestJSExpressServer,
+  'ClickHouse Exporter 2',
+  clickHouseExporter
 );

@@ -7,24 +7,16 @@ import {
 } from '../audit-log.interface';
 
 export class AuditlogClickHouseExporter implements IAuditLogExporter {
-  private readonly client: ClickHouseClient;
   private readonly databaseName: string;
   private readonly logExpired: number;
   private readonly auditLogTableName: string;
   private readonly options: IAuditLogClickHouseExporterOption;
+  private client?: ClickHouseClient;
 
   constructor(options: IAuditLogClickHouseExporterOption) {
     this.options = options;
     this.databaseName = options.databaseName ?? 'auditlog';
-    this.client =
-      options.clickHouseClient ??
-      createClient({
-        url: options.clickHouseUrl || 'http://localhost:8123',
-        database: this.databaseName,
-        clickhouse_settings: {
-          async_insert: 1,
-        },
-      });
+    this.client = options.clickHouseClient;
     this.auditLogTableName = 'audit_logs';
     this.logExpired = options.logExpired ?? 180;
   }
@@ -33,10 +25,23 @@ export class AuditlogClickHouseExporter implements IAuditLogExporter {
     return new AuditlogClickHouseExporter(this.options);
   }
 
+  createClickhouseClient(): ClickHouseClient {
+    return createClient({
+      url: this.options.clickHouseUrl || 'http://localhost:8123',
+      database: this.databaseName,
+      clickhouse_settings: {
+        async_insert: 1,
+      },
+    });
+  }
+
   async startup() {
+    if (!this.client) {
+      this.client = this.createClickhouseClient();
+    }
     try {
       // setup table
-      await this.client.query({
+      await this.client?.query({
         query: `
 CREATE TABLE IF NOT EXISTS ${this.auditLogTableName} (
   service_name String,
@@ -70,7 +75,7 @@ SETTINGS index_granularity = 8192
   }
 
   async shutdown() {
-    await this.client.close();
+    await this.client?.close();
   }
 
   async sendAuditLog(log: IAuditLog) {
@@ -96,7 +101,7 @@ SETTINGS index_granularity = 8192
           created_at: this.formatDateToUTC(new Date()),
         },
       ];
-      await this.client.insert({
+      await this.client?.insert({
         table: this.auditLogTableName,
         values: values,
         format: 'JSONEachRow',

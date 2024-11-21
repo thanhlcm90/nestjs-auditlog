@@ -99,6 +99,19 @@ export const createTests = (
       agent: 'got (https://github.com/sindresorhus/got)',
     },
   };
+  const auditLog5 = {
+    ...auditLog4,
+    data_diff: {
+      before: { name: 'cat 1' },
+      after: { name: 'cat 2' },
+      diff: {
+        name: {
+          __new: 'cat 2',
+          __old: 'cat 1',
+        },
+      },
+    },
+  };
 
   function removeIp(args) {
     return args.map((data) => {
@@ -641,7 +654,7 @@ export const createTests = (
     await cleanupNestJSApp();
   });
 
-  test(`${rootTitle} - should send audit log with compare data`, async (t) => {
+  test(`${rootTitle} - should send audit log with compare data 1`, async (t) => {
     const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
 
@@ -657,21 +670,26 @@ export const createTests = (
 
     t.true(httpServer.listening);
     t.true(stub.called);
-    t.deepEqual(removeIp(stub.firstCall.args), [
-      {
-        ...auditLog4,
-        data_diff: {
-          before: { name: 'cat 1' },
-          after: { name: 'cat 2' },
-          diff: {
-            name: {
-              __new: 'cat 2',
-              __old: 'cat 1',
-            },
-          },
-        },
-      },
-    ]);
+    t.deepEqual(removeIp(stub.firstCall.args), [auditLog5]);
+    t.is(response.body, 'Congratulations! You created the cat 1!');
+    additionalExpect?.(t);
+    await cleanupNestJSApp();
+  });
+
+  test(`${rootTitle} - should send audit log with compare data 2`, async (t) => {
+    const exporter = auditLogExporter.clone();
+
+    const testingServer = await createNestJSTestingServer({
+      auditLogModule: AuditLogModule.forRoot({
+        exporter,
+      }),
+    });
+    const { httpServer, url, cleanupNestJSApp } = testingServer;
+    const response = await got.post(`${url}/compare-data`, {
+      json: { id: '1', username: 'daniel', role: 'admin' },
+    });
+
+    t.true(httpServer.listening);
     t.is(response.body, 'Congratulations! You created the cat 1!');
     additionalExpect?.(t);
     await cleanupNestJSApp();
