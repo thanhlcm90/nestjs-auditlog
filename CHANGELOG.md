@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.5.4](https://github.com/thanhlcm90/nestjs-auditlog/compare/v1.5.2...v1.5.4) (2024-11-21)
+
+
+### Bug Fixes
+
+* add data comparator to log ([b5a8eb4](https://github.com/thanhlcm90/nestjs-auditlog/commit/b5a8eb4c687cf400c80dd68fcb865e3b4ccd1dd1))
+* add service info to clickhouse logs ([be2b193](https://github.com/thanhlcm90/nestjs-auditlog/commit/be2b19342f1e19822957c29758c8527756f1cc80))
+* create clickhouse client when bootstrap module ([5c81149](https://github.com/thanhlcm90/nestjs-auditlog/commit/5c8114997cb23d851521f3ade3612b537f8e6544))
+* save clickhouse created_at UTC time ([e7b107e](https://github.com/thanhlcm90/nestjs-auditlog/commit/e7b107e1a33e603746dc901bafdef76b312f02f9))
+
 ### [1.5.2](https://github.com/thanhlcm90/nestjs-auditlog/compare/v1.5.0...v1.5.2) (2024-11-21)
 
 ## [1.5.0](https://github.com/thanhlcm90/nestjs-auditlog/compare/v1.4.0...v1.5.0) (2024-11-21)
