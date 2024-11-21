@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.5.6](https://github.com/thanhlcm90/nestjs-auditlog/compare/v1.5.4...v1.5.6) (2024-11-21)
+
+
+### Bug Fixes
+
+* expose clickhouse client to exporter ([6718695](https://github.com/thanhlcm90/nestjs-auditlog/commit/67186955c5f466496cf58ec49b481f24e31ffc19))
+
 ### [1.5.4](https://github.com/thanhlcm90/nestjs-auditlog/compare/v1.5.2...v1.5.4) (2024-11-21)
 
 
