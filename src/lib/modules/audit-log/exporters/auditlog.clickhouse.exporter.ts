@@ -35,13 +35,17 @@ export class AuditlogClickHouseExporter implements IAuditLogExporter {
     });
   }
 
+  getClient(): ClickHouseClient | undefined {
+    return this.client;
+  }
+
   async startup() {
     if (!this.client) {
       this.client = this.createClickhouseClient();
     }
     try {
       // setup table
-      await this.client?.query({
+      await this.getClient()?.query({
         query: `
 CREATE TABLE IF NOT EXISTS ${this.auditLogTableName} (
   service_name String,
@@ -75,7 +79,7 @@ SETTINGS index_granularity = 8192
   }
 
   async shutdown() {
-    await this.client?.close();
+    await this.getClient()?.close();
   }
 
   async sendAuditLog(log: IAuditLog) {
@@ -101,7 +105,7 @@ SETTINGS index_granularity = 8192
           created_at: this.formatDateToUTC(new Date()),
         },
       ];
-      await this.client?.insert({
+      await this.getClient()?.insert({
         table: this.auditLogTableName,
         values: values,
         format: 'JSONEachRow',
