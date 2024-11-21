@@ -13,9 +13,9 @@ export class AuditlogClickHouseExporter implements IAuditLogExporter {
   private readonly auditLogTableName: string;
   private readonly options: IAuditLogClickHouseExporterOption;
 
-  constructor(options: IAuditLogClickHouseExporterOption = {}) {
+  constructor(options: IAuditLogClickHouseExporterOption) {
     this.options = options;
-    this.databaseName = options.databaseName ?? 'test_auditlog';
+    this.databaseName = options.databaseName ?? 'auditlog';
     this.client =
       options.clickHouseClient ??
       createClient({
@@ -39,6 +39,9 @@ export class AuditlogClickHouseExporter implements IAuditLogExporter {
       await this.client.query({
         query: `
 CREATE TABLE IF NOT EXISTS ${this.auditLogTableName} (
+  service_name String,
+  service_namespace String,
+  service_env String,
   resource_id String,
   resource_type String,
   resource_data_before String,
@@ -53,10 +56,10 @@ CREATE TABLE IF NOT EXISTS ${this.auditLogTableName} (
   message String,
   created_at DateTime
 ) ENGINE = MergeTree
-PRIMARY KEY (created_at, actor_id, operation_type)
+PRIMARY KEY (service_name, service_namespace, service_env, created_at, actor_id, operation_type)
 TTL created_at + toIntervalDay(${this.logExpired})
 PARTITION BY toYYYYMM(created_at)
-ORDER BY (created_at, actor_id, operation_type)
+ORDER BY (service_name, service_namespace, service_env, created_at, actor_id, operation_type)
 SETTINGS index_granularity = 8192
       `,
       });
@@ -72,6 +75,9 @@ SETTINGS index_granularity = 8192
   async sendAuditLog(log: IAuditLog) {
     const values = [
       {
+        service_name: this.options.serviceName,
+        service_namespace: this.options.serviceNamespace ?? '',
+        service_env: this.options.serviceEnvironmentName ?? '',
         resource_id: log.resource.id ?? '',
         resource_type: log.resource.type ?? '',
         resource_data_before: '', // map later

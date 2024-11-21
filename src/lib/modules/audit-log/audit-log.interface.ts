@@ -143,7 +143,30 @@ export interface IAuditLogExporter {
   clone(): IAuditLogExporter;
 }
 
-export interface IAuditLogClickHouseExporterOption {
+export interface IAuditLogExporterOptions {
+  /**
+   * service name that save to log, example: product
+   */
+  serviceName: string;
+
+  /**
+   * save namespace that save to log, example: audit-dev
+   */
+  serviceNamespace?: string;
+
+  /**
+   * log record exporter
+   */
+  exporter?: LogRecordExporter;
+
+  /**
+   * service environment name, example: development
+   */
+  serviceEnvironmentName?: string;
+}
+
+export interface IAuditLogClickHouseExporterOption
+  extends IAuditLogExporterOptions {
   /**
    * ClickHouse DB url, default "http://localhost:8123"
    */
@@ -155,7 +178,7 @@ export interface IAuditLogClickHouseExporterOption {
   clickHouseClient?: ClickHouseClient;
 
   /**
-   * log database name, default "test_auditlog"
+   * log database name, default "auditlog"
    */
   databaseName?: string;
 
@@ -163,13 +186,6 @@ export interface IAuditLogClickHouseExporterOption {
    * log data expired in day, default is 180 days
    */
   logExpired?: number; // in second
-}
-
-export interface IAuditLogExporterOptions {
-  serviceName: string;
-  serviceNamespace: string;
-  exporter?: LogRecordExporter;
-  serviceEnvironmentName?: string;
 }
 
 export interface IExporterConfig {

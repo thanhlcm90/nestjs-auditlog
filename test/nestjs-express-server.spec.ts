@@ -49,6 +49,7 @@ createTests(
   createNestJSExpressServer,
   'ClickHouse Exporter',
   new AuditlogClickHouseExporter({
+    serviceName: 'test',
     clickHouseClient,
   }),
   (t) => {
