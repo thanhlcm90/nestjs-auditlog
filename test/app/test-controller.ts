@@ -13,6 +13,8 @@ import { UseGuards } from '@nestjs/common';
 import {
   AuditLog,
   AuditLogCreate,
+  AuditLogDataDiff,
+  AuditLogDataDiffCallback,
   AuditLogQuery,
   AuditLogRemove,
   AuditLogService,
@@ -24,7 +26,7 @@ import { TestGuard } from './test.guard';
 
 @Controller('/')
 export class TestController {
-  constructor(private readonly auditLogService: AuditLogService) {}
+  constructor(public readonly auditLogService: AuditLogService) {}
 
   @AuditLog({
     resource: {
@@ -316,5 +318,28 @@ export class TestController {
   @Post('array-id')
   createTheCatArrayId(@Body() body: any): any {
     return `Congratulations! You created the cat ${body.id.join(',')}!`;
+  }
+
+  @AuditLog({
+    resource: {
+      type: 'Cat',
+    },
+    operation: {
+      id: 'createTheCat',
+      type: 'Create',
+    },
+    actor_id_field_map: 'body.username',
+    actor_type_field_map: 'body.role',
+  })
+  @Post('compare-data')
+  async createTheCatWithCompareData(
+    @Body() body: any,
+    @AuditLogDataDiff() dataDiff: AuditLogDataDiffCallback
+  ) {
+    dataDiff(
+      await this.auditLogService.getDataBefore(),
+      await this.auditLogService.getDataAfter()
+    );
+    return `Congratulations! You created the cat ${body.id}!`;
   }
 }

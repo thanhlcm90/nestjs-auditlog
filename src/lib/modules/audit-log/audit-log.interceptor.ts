@@ -21,6 +21,7 @@ import {
   REQUEST_HEADER_USER_AGENT,
   RESPONSE_KEYWORD,
 } from './constant';
+import { AUDIT_LOG_DATA_DIFF_KEY } from './decorators';
 import { IAuditLogDecoratorOptions } from './decorators/audit-log.decorator';
 
 @Injectable()
@@ -47,11 +48,12 @@ export class AuditLogInterceptor implements NestInterceptor {
 
   private async sendAuditLog(
     options: IAuditLogDecoratorOptions,
-    request,
-    response,
+    request: Request,
+    response: Response,
     status: OperationStatus
   ) {
     const ip = getClientIp(request);
+
     const auditLog: IAuditLog = {
       resource: {
         id:
@@ -84,13 +86,17 @@ export class AuditLogInterceptor implements NestInterceptor {
       },
     };
 
+    if (request[AUDIT_LOG_DATA_DIFF_KEY]) {
+      auditLog.data_diff = request[AUDIT_LOG_DATA_DIFF_KEY];
+    }
+
     await this.auditLogService.sendAuditLog(auditLog);
   }
 
   intercept(
     context: ExecutionContext,
     next: CallHandler<any>
-  ): Observable<any> | Promise<Observable<any>> {
+  ): Observable<any> {
     const options: IAuditLogDecoratorOptions | undefined =
       this._reflector.get<IAuditLogDecoratorOptions>(
         META_AUDIT_LOG,

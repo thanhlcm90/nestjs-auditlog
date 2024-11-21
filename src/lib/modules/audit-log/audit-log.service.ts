@@ -36,4 +36,16 @@ export class AuditLogService
   async beforeApplicationShutdown(): Promise<void> {
     await this.exporter.shutdown();
   }
+
+  async getDataBefore() {
+    return {
+      name: 'cat 1',
+    };
+  }
+
+  async getDataAfter() {
+    return {
+      name: 'cat 2',
+    };
+  }
 }

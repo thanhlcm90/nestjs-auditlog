@@ -103,6 +103,23 @@ export interface IAuditLogActor {
   agent?: string;
 }
 
+export interface IAuditLogDataDiff {
+  /**
+   * data before making request
+   */
+  before?: any;
+
+  /**
+   * data after making request
+   */
+  after?: any;
+
+  /**
+   * json-diff
+   */
+  diff?: any;
+}
+
 export interface IAuditLog {
   /**
    * Represents the audit record resource.
@@ -118,6 +135,11 @@ export interface IAuditLog {
    * Represents the audit record actor.
    */
   actor: IAuditLogActor;
+
+  /**
+   * Represents the audit record data_diff
+   */
+  data_diff?: IAuditLogDataDiff;
 }
 
 export interface IAuditLogConfigOptions {

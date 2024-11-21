@@ -641,6 +641,42 @@ export const createTests = (
     await cleanupNestJSApp();
   });
 
+  test(`${rootTitle} - should send audit log with compare data`, async (t) => {
+    const exporter = auditLogExporter.clone();
+    const stub = sinon.stub(exporter, 'sendAuditLog');
+
+    const testingServer = await createNestJSTestingServer({
+      auditLogModule: AuditLogModule.forRoot({
+        exporter,
+      }),
+    });
+    const { httpServer, url, cleanupNestJSApp } = testingServer;
+    const response = await got.post(`${url}/compare-data`, {
+      json: { id: '1', username: 'daniel', role: 'admin' },
+    });
+
+    t.true(httpServer.listening);
+    t.true(stub.called);
+    t.deepEqual(removeIp(stub.firstCall.args), [
+      {
+        ...auditLog4,
+        data_diff: {
+          before: { name: 'cat 1' },
+          after: { name: 'cat 2' },
+          diff: {
+            name: {
+              __new: 'cat 2',
+              __old: 'cat 1',
+            },
+          },
+        },
+      },
+    ]);
+    t.is(response.body, 'Congratulations! You created the cat 1!');
+    additionalExpect?.(t);
+    await cleanupNestJSApp();
+  });
+
   test(`${rootTitle} - should send audit log with actor from guard`, async (t) => {
     const exporter = auditLogExporter.clone();
     const stub = sinon.stub(exporter, 'sendAuditLog');
@@ -757,7 +793,7 @@ export const createTests = (
 
   test(`${rootTitle} - should send audit log by using AuditLogService with fixed resource_id`, async (t) => {
     const exporter = auditLogExporter.clone();
-    const exporterStub = sinon.stub(exporter, 'sendAuditLog');
+    const sub = sinon.stub(exporter, 'sendAuditLog');
 
     const testingServer = await createNestJSTestingServer({
       auditLogModule: AuditLogModule.forRoot({
@@ -769,8 +805,8 @@ export const createTests = (
     auditLogService.sendAuditLog(auditLog4);
 
     t.true(httpServer.listening);
-    t.true(exporterStub.called);
-    t.deepEqual(exporterStub.firstCall.args, [auditLog4]);
+    t.true(sub.called);
+    t.deepEqual(sub.firstCall.args, [auditLog4]);
     additionalExpect?.(t);
     await cleanupNestJSApp();
   });

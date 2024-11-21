@@ -46,6 +46,7 @@ CREATE TABLE IF NOT EXISTS ${this.auditLogTableName} (
   resource_type String,
   resource_data_before String,
   resource_data_after String,
+  resource_data_diff String,
   operation_id String,
   operation_type String,
   operation_status String,
@@ -80,8 +81,15 @@ SETTINGS index_granularity = 8192
         service_env: this.options.serviceEnvironmentName ?? '',
         resource_id: log.resource.id ?? '',
         resource_type: log.resource.type ?? '',
-        resource_data_before: '', // map later
-        resource_data_after: '', // map later
+        resource_data_before: log.data_diff?.before
+          ? JSON.stringify(log.data_diff?.before)
+          : '',
+        resource_data_after: log.data_diff?.after
+          ? JSON.stringify(log.data_diff?.after)
+          : '',
+        resource_data_diff: log.data_diff?.diff
+          ? JSON.stringify(log.data_diff?.diff)
+          : '',
         operation_id: log.operation.id ?? '',
         operation_type: log.operation.type ?? '',
         operation_status: log.operation.status ?? '',
