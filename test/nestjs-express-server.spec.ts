@@ -1,12 +1,12 @@
-import { ClickHouseClient, createClient } from '@clickhouse/client';
+import { createClient } from '@clickhouse/client';
 import sinon from 'sinon';
 
 import {
+  AuditlogClickHouseExporter,
   AuditLoggerDefaultExporter,
   AuditlogOltpGrpcExporter,
   AuditlogOltpHttpExporter,
 } from '../src';
-import { AuditlogClickHouseExporter } from '../src/lib/modules/audit-log/exporters/auditlog.clickhouse.exporter';
 
 import { createTests } from './all-tests';
 import { createNestJSExpressServer } from './helpers/create-nestjs-express-server';
