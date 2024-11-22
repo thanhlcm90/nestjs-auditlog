@@ -160,7 +160,7 @@ export interface IAuditLogAsyncConfigOptions
 export interface IAuditLogExporter {
   startup(): Promise<void>;
   shutdown(): Promise<void>;
-  sendAuditLog(log: IAuditLog): Promise<void>;
+  sendAuditLog(log: IAuditLog): Promise<any>;
   customLoggerBodyTransformation(log: IAuditLog): string;
   clone(): IAuditLogExporter;
 }

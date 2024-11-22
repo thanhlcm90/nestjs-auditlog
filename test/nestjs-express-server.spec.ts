@@ -1,4 +1,5 @@
 import { createClient } from '@clickhouse/client';
+import test from 'ava';
 import sinon from 'sinon';
 
 import {
@@ -77,3 +78,49 @@ createTests(
   'ClickHouse Exporter 2',
   clickHouseExporter
 );
+
+test(`ClickHouse Exporter Unit Test - should return clickhouse client after bootstrap")`, async (t) => {
+  const exporter = new AuditlogClickHouseExporter({
+    serviceName: 'test',
+    serviceNamespace: 'test-dev',
+    serviceEnvironmentName: 'dev',
+    databaseName: 'test_auditlog',
+    logExpired: 180,
+  });
+  await exporter.startup();
+  const client = exporter.getClient();
+
+  t.true(!!client);
+});
+
+test(`ClickHouse Exporter Unit Test - should return empty clickhouse client without bootstrap")`, async (t) => {
+  const exporter = b.clone() as AuditlogClickHouseExporter;
+  const client = exporter.getClient();
+
+  t.is(client, undefined);
+});
+
+test(`ClickHouse Exporter Unit Test - should return auditlog table name")`, async (t) => {
+  t.is(clickHouseExporter.getTableName(), 'audit_logs');
+});
+
+test(`ClickHouse Exporter Unit Test - should print error when meet exception")`, async (t) => {
+  const exporter = b.clone() as AuditlogClickHouseExporter;
+  sinon.stub(exporter, 'getClient').throws(new Error('meet exception'));
+  await exporter.startup();
+  const auditlogData = await exporter.sendAuditLog({
+    resource: { id: '1', type: 'Cat' },
+    operation: {
+      id: 'findTheCat',
+      type: 'Query',
+      status: 'SUCCEEDED',
+    },
+    actor: {
+      id: 'Unknow',
+      type: 'Unknow',
+      agent: 'got (https://github.com/sindresorhus/got)',
+    },
+  });
+
+  t.is(auditlogData, null);
+});

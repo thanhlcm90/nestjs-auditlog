@@ -21,6 +21,7 @@
 - [Example](#example)
 - [Configuration](#configuration)
 - [Exporters](#exporters)
+- [Data Changes Audit Log](#data-changes-audit-log)
 - [Contact and Feedback](#contact-and-feedback)
 - [License](#license)
 
@@ -115,6 +116,8 @@ We have many similar decorators for default defined operation type `Create`, `Up
 - `AuditLogRemove`: decorator with default `operation.type = 'Remove'`
 
 - `AuditLogQuery`: decorator with default `operation.type = 'Query'`
+
+- `AuditLogDataDiff`: param decorator support save the data changes to audit log
 
 3. Another way, we can use the service `AuditLogService` to send audit log
 
@@ -227,6 +230,104 @@ We have many Auditlog Exporter, please check the folder `exporters`. Some exampl
 - `OpenTelemetryGrpcExporter`: the exporter that will emit the audit log to Opentelemetry host by GRPC method
 
 - `OpenTelemetryHttpExporter`: the exporter that will emit the audit log to Opentelemetry host by HTTP method
+
+- `AuditlogClickHouseExporter`: the exporter that will emit the audit log to ClickHouse Database
+
+### AuditlogClickHouseExporter
+
+How to import the `AuditLogModule` using the exporter `AuditlogClickHouseExporter`
+
+```ts
+AuditLogModule.forRoot({
+  exporter: new AuditlogClickHouseExporter({
+    serviceName: 'test',
+    databaseName: 'test_auditlog',
+    clickHouseUrl: 'http://localhost:8123',
+  }),
+});
+```
+
+Or we can create the `ClickHouseClient` and pass it
+
+```ts
+AuditLogModule.forRootAsync({
+  imports: [ConfigModule],
+  inject: [ConfigService],
+  useFactory: async (config: ConfigService) => {
+    const client = createClient({
+      url: config.clickhouseUrl,
+      clickhouse_settings: {
+        async_insert: 1,
+      },
+    });
+    return {
+      exporter: new AuditlogClickHouseExporter({
+        serviceName: 'test',
+        databaseName: 'test_auditlog',
+        clickHouseClient: client,
+      }),
+    };
+  },
+});
+```
+
+The `AuditlogClickHouseExporter` will insert the full audit log into the table `audit_logs` with interface bellow:
+
+```ts
+export interface IAuditLogPayload {
+  service_name: string;
+  service_namespace: string;
+  service_env: string;
+  resource_id: string;
+  resource_type: string;
+  resource_data_before: any;
+  resource_data_after: any;
+  resource_data_diff: any;
+  operation_id: string;
+  operation_type: string;
+  operation_status: string;
+  actor_id: string;
+  actor_type: string;
+  actor_ip: string;
+  actor_agent: string;
+  message: string;
+  created_at: string;
+}
+```
+
+## Data Changes Audit Log
+
+The library supports save the data changes to audit log report, please use the decorator `AuditLogDataDiff` when you want to save the data changes before and after an action.
+
+Example code:
+
+```ts
+@AuditLog({
+  resource: {
+    type: 'Cat',
+  },
+  operation: {
+    id: 'updateTheCat',
+    type: 'Update',
+  }
+})
+@Put(':id')
+async updateTheCat(
+  @Param('id') id: string,
+  @Body() body: any,
+  @AuditLogDataDiff() dataDiff: AuditLogDataDiffCallback
+) {
+  const catBefore = await this.catService.findCatById(id)
+
+  await this.catService.updateCatById(id, body);
+
+  const catAfter = await this.catService.findCatById(id)
+
+  dataDiff(catBefore, catAfter);
+
+  return catAfter;
+}
+```
 
 ## Contact and Feedback
 

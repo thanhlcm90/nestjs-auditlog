@@ -1,4 +1,5 @@
 import { ClickHouseClient, createClient } from '@clickhouse/client';
+import { Logger } from '@nestjs/common';
 
 import {
   IAuditLog,
@@ -7,6 +8,7 @@ import {
 } from '../audit-log.interface';
 
 export class AuditlogClickHouseExporter implements IAuditLogExporter {
+  private readonly logger = new Logger(AuditlogClickHouseExporter.name);
   private readonly databaseName: string;
   private readonly logExpired: number;
   private readonly auditLogTableName: string;
@@ -39,11 +41,16 @@ export class AuditlogClickHouseExporter implements IAuditLogExporter {
     return this.client;
   }
 
+  getTableName(): String {
+    return this.auditLogTableName;
+  }
+
   async startup() {
-    if (!this.client) {
-      this.client = this.createClickhouseClient();
-    }
     try {
+      if (!this.client) {
+        this.client = this.createClickhouseClient();
+        this.logger.log('Auditlog clickhouse database is connected');
+      }
       // setup table
       await this.getClient()?.query({
         query: `
@@ -74,7 +81,7 @@ SETTINGS index_granularity = 8192
       `,
       });
     } catch (ex) {
-      console.error(ex);
+      this.logger.error(`Error when bootstrap the exporter: ${ex.message}`);
     }
   }
 
@@ -110,9 +117,12 @@ SETTINGS index_granularity = 8192
         values: values,
         format: 'JSONEachRow',
       });
+
+      return values;
     } catch (ex) {
-      console.error(ex);
+      this.logger.error(`Error when insert auditlog data: ${ex.message}`);
     }
+    return null;
   }
 
   /**
